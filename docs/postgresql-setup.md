@@ -2,8 +2,6 @@
 
 Use PostgreSQL as the QA Lite application database. This database stores users,
 environments, SQL definitions, SQL permissions, and execution history.
-environments, SQL definitions, environment permissions, SQL permissions, and
-execution history.
 
 ## 1. Create The Tables
 

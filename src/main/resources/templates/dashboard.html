@@ -4,7 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>QA Lite | Dashboard</title>
+    <link rel="preload" as="image" th:href="@{/images/login-visual.webp}">
     <link rel="stylesheet" th:href="@{/css/login.css}">
+    <script defer th:src="@{/js/page-transition.js}"></script>
 </head>
 <body>
 <main class="dashboard-page">
@@ -12,7 +14,7 @@
         <p class="eyebrow">QA Lite</p>
         <h1>Dashboard</h1>
         <p>You are signed in successfully.</p>
-        <form th:action="@{/logout}" method="post">
+        <form th:action="@{/logout}" th:attr="data-login-url=@{/login(returning=true)}" method="post" class="logout-form">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <button type="submit">Logout</button>
         </form>
