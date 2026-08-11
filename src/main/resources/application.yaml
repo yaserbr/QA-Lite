@@ -1,0 +1,39 @@
+spring:
+  config:
+    import: optional:file:./.env[.properties]
+
+  application:
+    name: qa-lite
+
+  datasource:
+    url: ${QALITE_DB_URL:jdbc:postgresql://localhost:5432/qalite}
+    username: ${QALITE_DB_USERNAME:qalite}
+    password: ${QALITE_DB_PASSWORD:qalite}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${QALITE_DB_POOL_SIZE:10}
+      minimum-idle: 2
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  servlet:
+    context-path: /QaLite
+    session:
+      timeout: 30m
+
+logging:
+  level:
+    org.springframework.security: INFO
+    com.mobily.qalite: INFO
