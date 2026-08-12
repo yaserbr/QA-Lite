@@ -3,9 +3,25 @@ const loginForm = document.querySelector(".login-form");
 const loginError = document.querySelector("#login-error");
 const dashboardPage = document.querySelector(".dashboard-page");
 const logoutForm = document.querySelector(".logout-form");
+const LOGIN_RETURN_DURATION = 980;
+const DASHBOARD_EXIT_DURATION = 760;
 
 const forceReflow = (element) => {
     element.getBoundingClientRect();
+};
+
+const waitForLoginVisual = async () => {
+    const visualImage = loginPage?.querySelector(".login-visual-layer img");
+
+    if (!visualImage || typeof visualImage.decode !== "function") {
+        return;
+    }
+
+    try {
+        await visualImage.decode();
+    } catch (error) {
+        // The transition can still run if decoding is unsupported or interrupted.
+    }
 };
 
 if (loginPage?.classList.contains("is-returning")) {
@@ -16,12 +32,13 @@ if (loginPage?.classList.contains("is-returning")) {
         }
     };
 
-    const startReturnAnimation = () => {
+    const startReturnAnimation = async () => {
+        await waitForLoginVisual();
         window.requestAnimationFrame(() => {
             forceReflow(loginPage);
             window.requestAnimationFrame(() => {
                 loginPage.classList.add("is-entered");
-                window.setTimeout(clearReturnState, 820);
+                window.setTimeout(clearReturnState, LOGIN_RETURN_DURATION);
             });
         });
     };
@@ -95,7 +112,10 @@ if (dashboardPage && logoutForm) {
 
         submitButton.disabled = true;
         submitButton.textContent = "Signing out...";
-        dashboardPage.classList.add("is-leaving");
+        forceReflow(dashboardPage);
+        window.requestAnimationFrame(() => {
+            dashboardPage.classList.add("is-leaving");
+        });
 
         window.setTimeout(async () => {
             try {
@@ -118,7 +138,7 @@ if (dashboardPage && logoutForm) {
                 submitButton.disabled = false;
                 submitButton.textContent = "Logout";
             }
-        }, 420);
+        }, DASHBOARD_EXIT_DURATION);
     });
 }
 
