@@ -352,22 +352,11 @@ body {
     color: #fff;
 }
 
-.dashboard-brand strong,
-.dashboard-brand span {
-    display: block;
-}
-
 .dashboard-brand strong {
+    display: block;
     color: #172021;
     font-size: 18px;
     line-height: 1.15;
-}
-
-.dashboard-brand span {
-    margin-top: 2px;
-    color: #667472;
-    font-size: 13px;
-    font-weight: 700;
 }
 
 .dashboard-logout {
@@ -454,15 +443,6 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 14px;
-}
-
-.workspace-header h1 {
-    margin: 4px 0 0;
-    color: #172021;
-    font-size: 30px;
-    line-height: 1.1;
-    font-weight: 850;
-    letter-spacing: 0;
 }
 
 .env-container {
@@ -866,14 +846,6 @@ body {
     transform: translate3d(12vw, 0, 0) scale(0.98);
 }
 
-.eyebrow {
-    margin: 0 0 8px;
-    color: var(--accent);
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0;
-}
-
 @keyframes dashboard-enter {
     from {
         opacity: 0;
@@ -951,10 +923,6 @@ body {
 }
 
 @media (max-width: 900px) {
-    body {
-        overflow: auto;
-    }
-
     .dashboard-page {
         height: auto;
         min-height: 100svh;
@@ -993,59 +961,9 @@ body {
     .workflow-command-block {
         width: min(360px, calc(100% - 84px));
     }
-
-    .login-page {
-        grid-template-columns: 1fr;
-        padding: 20px;
-        background-image:
-            linear-gradient(180deg, rgba(7, 27, 31, 0.4), rgba(7, 27, 31, 0.55)),
-            url("../images/login-visual.webp");
-        background-size: cover;
-        background-position: center;
-    }
-
-    .login-visual-layer {
-        display: none;
-    }
-
-    .login-shell {
-        grid-column: 1;
-        min-height: calc(100svh - 40px);
-        display: grid;
-        align-items: center;
-        padding-block: 0;
-    }
-
-    .brand-corner {
-        position: relative;
-        top: auto;
-        left: auto;
-        margin-bottom: 24px;
-    }
-
-    .login-quote {
-        position: relative;
-        left: auto;
-        bottom: auto;
-        width: min(100%, 540px);
-        max-width: 540px;
-        padding: 92px 0 0;
-    }
-
-    .login-quote p {
-        max-width: 540px;
-    }
-
-    .form-panel {
-        justify-self: center;
-    }
 }
 
 @media (max-width: 520px) {
-    body {
-        overflow: auto;
-    }
-
     .login-page {
         min-height: 100svh;
         padding: 18px;
@@ -1085,10 +1003,6 @@ body {
 
     .workspace-panel {
         padding: 14px;
-    }
-
-    .workspace-header h1 {
-        font-size: 26px;
     }
 }
 

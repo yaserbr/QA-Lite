@@ -160,10 +160,11 @@ if (builderLayout) {
 
     const CONNECT_DISTANCE = 54;
     const DISCONNECT_DISTANCE = 92;
+    const activeEnvironmentButton = envButtons.find((button) => button.classList.contains("is-active")) || envButtons[0];
 
     let activeEnvironment = {
-        id: envButtons.find((button) => button.classList.contains("is-active"))?.dataset.env || "SIT",
-        note: envButtons.find((button) => button.classList.contains("is-active"))?.dataset.envNote || "Integration"
+        id: activeEnvironmentButton?.dataset.env || "SIT",
+        note: activeEnvironmentButton?.dataset.envNote || "Integration"
     };
     let activeCommand = null;
     let commandPosition = { x: 0, y: 0 };
@@ -212,6 +213,19 @@ if (builderLayout) {
         connectionState.environmentId = environmentId;
         connectionState.commandId = commandId;
         connectionState.connectionStatus = status;
+    };
+
+    const setConnectionClasses = (connected) => {
+        workflowCanvas?.classList.toggle("is-connected", connected);
+        workflowCanvas?.classList.remove("is-connection-available");
+        workflowCommandBlock?.classList.toggle("is-connected", connected);
+        workflowCommandBlock?.classList.toggle("is-disconnected", !connected);
+        workflowCommandBlock?.classList.remove("is-connection-available");
+    };
+
+    const markDisconnected = () => {
+        setConnectionState(null, activeCommand?.id || null, "disconnected");
+        setConnectionClasses(false);
     };
 
     const clearResult = () => {
@@ -287,10 +301,7 @@ if (builderLayout) {
     };
 
     const disconnectCommand = (moveToDefaultPosition) => {
-        setConnectionState(null, activeCommand?.id || null, "disconnected");
-        workflowCanvas?.classList.remove("is-connected", "is-connection-available");
-        workflowCommandBlock?.classList.remove("is-connected", "is-connection-available");
-        workflowCommandBlock?.classList.add("is-disconnected");
+        markDisconnected();
 
         if (moveToDefaultPosition) {
             const position = getDefaultCommandPosition();
@@ -312,10 +323,7 @@ if (builderLayout) {
         workflowCommandBlock.classList.add("is-snapping");
         setCommandPosition(x, y);
         setConnectionState(activeEnvironment.id, activeCommand.id, "connected");
-        workflowCanvas?.classList.add("is-connected");
-        workflowCanvas?.classList.remove("is-connection-available");
-        workflowCommandBlock?.classList.add("is-connected");
-        workflowCommandBlock?.classList.remove("is-disconnected", "is-connection-available");
+        setConnectionClasses(true);
         window.setTimeout(() => workflowCommandBlock.classList.remove("is-snapping"), 190);
         updateRunButton();
         clearResult();
@@ -344,10 +352,7 @@ if (builderLayout) {
         }
 
         if (autoConnect && activeCommand) {
-            setConnectionState(null, activeCommand.id, "disconnected");
-            workflowCanvas?.classList.remove("is-connected", "is-connection-available");
-            workflowCommandBlock?.classList.remove("is-connected", "is-connection-available");
-            workflowCommandBlock?.classList.add("is-disconnected");
+            markDisconnected();
             snapCommand();
             return;
         }
@@ -431,7 +436,7 @@ if (builderLayout) {
 
     commandBlocks.forEach((commandBlock) => {
         commandBlock.addEventListener("click", () => {
-            renderCommand(getCommandFromBlock(commandBlock), true);
+            renderCommand(commandsById.get(commandBlock.dataset.command), true);
         });
 
         commandBlock.addEventListener("dragstart", (event) => {
@@ -545,6 +550,6 @@ if (builderLayout) {
         setCommandPosition(commandPosition.x, commandPosition.y);
     });
 
-    renderCommand(getCommandFromBlock(commandBlocks[0]));
+    renderCommand(commandsById.get(commandBlocks[0]?.dataset.command));
     updateEnvironment(activeEnvironment.id, activeEnvironment.note);
 }
