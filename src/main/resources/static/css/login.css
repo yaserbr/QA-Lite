@@ -430,7 +430,7 @@ body {
 
 .workspace-panel {
     display: grid;
-    grid-template-rows: auto minmax(190px, 0.62fr) auto minmax(260px, 1fr);
+    grid-template-rows: auto 188px minmax(260px, 1fr);
     gap: 18px;
     padding: 18px;
     overflow: hidden;
@@ -523,64 +523,76 @@ body {
     opacity: 0.72;
 }
 
-.mount-zone {
-    min-height: 220px;
-    display: grid;
-    place-items: center;
+.workflow-canvas {
+    --connector-width: 38px;
+    --connector-height: 58px;
+    position: relative;
+    min-height: 188px;
     border-radius: 8px;
-    padding: 20px 0 10px;
-    background: transparent;
-    overflow: visible;
+    background: #f7faf9;
+    overflow: hidden;
 }
 
-.env-stage {
-    width: min(560px, 100%);
-    min-height: 190px;
-    border: 2px solid #183637;
+.workflow-env-block,
+.workflow-command-block {
+    position: absolute;
+    min-height: 118px;
     border-radius: 8px;
-    padding: 16px;
-    background: linear-gradient(180deg, #21494c, #183637);
     color: #fff;
-    box-shadow: 0 24px 50px rgba(24, 54, 55, 0.2);
-    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+    box-shadow: 0 18px 38px rgba(12, 14, 22, 0.14);
+    transition: box-shadow 160ms ease, filter 160ms ease;
+    user-select: none;
 }
 
-.env-stage.is-drag-over {
-    border-color: #40c8c1;
-    box-shadow: 0 28px 70px rgba(64, 200, 193, 0.28);
-    transform: translateY(-2px);
-}
-
-.env-stage-top {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-}
-
-.env-stage-top strong {
-    font-size: 24px;
-    line-height: 1;
-}
-
-.command-slot {
-    min-height: 104px;
+.workflow-env-block {
+    left: 58px;
+    top: 35px;
+    width: 176px;
     display: grid;
-    place-items: center;
-    margin-top: 24px;
-    border: 1px dashed rgba(255, 255, 255, 0.36);
-    border-radius: 8px;
-    padding: 14px;
-    background: rgba(255, 255, 255, 0.08);
+    align-content: center;
+    gap: 8px;
+    padding: 22px 30px 22px 24px;
+    background: linear-gradient(180deg, #21494c, #183637);
 }
 
-.slot-state {
+.workflow-env-block::after {
+    content: "";
+    position: absolute;
+    right: -1px;
+    top: 50%;
+    width: var(--connector-width);
+    height: var(--connector-height);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-right: 0;
+    border-radius: 999px 0 0 999px;
+    background: #f7faf9;
+    box-shadow: inset 8px 0 16px rgba(12, 14, 22, 0.12);
+    transform: translateY(-50%);
+    transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.workflow-env-name,
+.workflow-command-title {
+    position: relative;
+    z-index: 1;
+    line-height: 1.1;
+    font-weight: 900;
+}
+
+.workflow-env-name {
+    font-size: 30px;
+}
+
+.workflow-env-note {
+    position: relative;
+    z-index: 1;
     color: rgba(255, 255, 255, 0.68);
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 800;
 }
 
 .command-block,
-.mounted-command {
+.workflow-command-block {
     position: relative;
     border-radius: 8px;
     color: #fff;
@@ -599,8 +611,7 @@ body {
     transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
 }
 
-.command-block::before,
-.mounted-command::before {
+.command-block::before {
     content: "";
     position: absolute;
     left: -10px;
@@ -647,18 +658,77 @@ body {
     font-weight: 900;
 }
 
-.mounted-command {
-    width: min(430px, 100%);
+.workflow-command-block {
+    position: absolute;
+    left: 430px;
+    top: 35px;
+    width: min(430px, calc(100% - 96px));
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 10px;
-    padding: 18px 18px 18px 28px;
+    gap: 12px 14px;
+    padding: 22px 22px 22px 38px;
     font-size: 15px;
     font-weight: 900;
+    cursor: grab;
+    touch-action: none;
+    will-change: transform, left, top;
 }
 
-.mounted-input-label {
+.workflow-command-block::before {
+    content: "";
+    position: absolute;
+    left: calc(var(--connector-width) * -1);
+    top: 50%;
+    width: var(--connector-width);
+    height: var(--connector-height);
+    border-radius: 999px 0 0 999px;
+    background: inherit;
+    box-shadow: -10px 0 20px rgba(12, 14, 22, 0.08);
+    transform: translateY(-50%);
+}
+
+.workflow-command-block.is-dragging {
+    cursor: grabbing;
+    z-index: 4;
+    filter: saturate(1.04);
+    box-shadow: 0 26px 58px rgba(12, 14, 22, 0.2);
+}
+
+.workflow-command-block.is-snapping {
+    transition: left 180ms cubic-bezier(0.2, 0.8, 0.2, 1), top 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.workflow-command-block.is-connected {
+    z-index: 3;
+    box-shadow: 0 18px 38px rgba(12, 14, 22, 0.16);
+}
+
+.workflow-canvas.is-connection-available .workflow-env-block {
+    box-shadow: 0 22px 48px rgba(64, 200, 193, 0.22);
+}
+
+.workflow-canvas.is-connection-available .workflow-env-block::after {
+    border-color: rgba(64, 200, 193, 0.74);
+    box-shadow: inset 8px 0 16px rgba(64, 200, 193, 0.14), 0 0 0 4px rgba(64, 200, 193, 0.08);
+}
+
+.workflow-canvas.is-connection-available .workflow-command-block::before {
+    box-shadow: -10px 0 20px rgba(64, 200, 193, 0.18);
+}
+
+.workflow-canvas.is-connected .workflow-env-block::after {
+    border-color: rgba(255, 255, 255, 0.08);
+    background: transparent;
+    box-shadow: none;
+}
+
+.workflow-command-title {
+    flex: 1 0 100%;
+    font-size: 17px;
+}
+
+.workflow-command-input-label {
     display: flex;
     flex: 1 1 180px;
     align-items: center;
@@ -668,7 +738,7 @@ body {
     font-weight: 850;
 }
 
-.mounted-command input {
+.workflow-command-block input {
     flex: 1 1 120px;
     min-width: 96px;
     max-width: 190px;
@@ -682,7 +752,7 @@ body {
     outline: none;
 }
 
-.mounted-command input:focus {
+.workflow-command-block input:focus {
     border-color: rgba(255, 255, 255, 0.86);
     background: rgba(255, 255, 255, 0.24);
     box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.12);
@@ -834,6 +904,19 @@ body {
 
     .workspace-panel {
         min-height: 560px;
+    }
+
+    .workflow-canvas {
+        min-height: 330px;
+    }
+
+    .workflow-env-block {
+        left: 22px;
+        top: 42px;
+    }
+
+    .workflow-command-block {
+        width: min(360px, calc(100% - 84px));
     }
 
     .login-page {

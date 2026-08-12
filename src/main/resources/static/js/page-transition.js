@@ -127,14 +127,33 @@ const builderLayout = document.querySelector(".builder-layout");
 if (builderLayout) {
     const envButtons = Array.from(document.querySelectorAll(".env-container"));
     const commandBlocks = Array.from(document.querySelectorAll(".command-block"));
-    const envStage = document.querySelector("#env-stage");
-    const stageEnvName = document.querySelector("#stage-env-name");
-    const commandSlot = document.querySelector("#command-slot");
+    const workflowCanvas = document.querySelector("#workflow-canvas");
+    const workflowEnvBlock = document.querySelector("#workflow-env-block");
+    const workflowEnvName = document.querySelector("#workflow-env-name");
+    const workflowEnvNote = document.querySelector("#workflow-env-note");
+    const workflowCommandBlock = document.querySelector("#workflow-command-block");
+    const workflowCommandTitle = document.querySelector("#workflow-command-title");
+    const workflowCommandFieldLabel = document.querySelector("#workflow-command-field-label");
+    const workflowCommandInput = document.querySelector("#workflow-command-input");
     const runButton = document.querySelector("#run-command");
     const resultOutput = document.querySelector("#result-output");
 
-    let activeEnv = envButtons.find((button) => button.classList.contains("is-active"))?.dataset.env || "SIT";
-    let mountedCommand = null;
+    const CONNECT_DISTANCE = 54;
+    const DISCONNECT_DISTANCE = 92;
+
+    let activeEnvironment = {
+        id: envButtons.find((button) => button.classList.contains("is-active"))?.dataset.env || "SIT",
+        note: envButtons.find((button) => button.classList.contains("is-active"))?.dataset.envNote || "Integration"
+    };
+    let activeCommand = null;
+    let commandPosition = { x: 0, y: 0 };
+    let dragState = null;
+
+    const connectionState = {
+        environmentId: null,
+        commandId: null,
+        connectionStatus: "disconnected"
+    };
 
     const escapeHtml = (value) => String(value)
             .replaceAll("&", "&amp;")
@@ -159,6 +178,22 @@ if (builderLayout) {
         getCommandFromBlock(commandBlock)
     ]));
 
+    const getConnectorSize = () => {
+        const styles = window.getComputedStyle(workflowCanvas);
+        return {
+            width: parseFloat(styles.getPropertyValue("--connector-width")) || 38,
+            height: parseFloat(styles.getPropertyValue("--connector-height")) || 58
+        };
+    };
+
+    const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+    const setConnectionState = (environmentId, commandId, status) => {
+        connectionState.environmentId = environmentId;
+        connectionState.commandId = commandId;
+        connectionState.connectionStatus = status;
+    };
+
     const clearResult = () => {
         if (!resultOutput) {
             return;
@@ -170,46 +205,155 @@ if (builderLayout) {
 
     const updateRunButton = () => {
         if (runButton) {
-            runButton.disabled = !mountedCommand;
+            runButton.disabled = connectionState.connectionStatus !== "connected";
         }
     };
 
-    const updateEnvironment = (envName) => {
-        activeEnv = envName;
-
-        envButtons.forEach((button) => {
-            button.classList.toggle("is-active", button.dataset.env === activeEnv);
-        });
-
-        if (stageEnvName) {
-            stageEnvName.textContent = activeEnv;
-        }
-
-        updateRunButton();
-        clearResult();
-    };
-
-    const renderMountedCommand = () => {
-        if (!commandSlot || !mountedCommand) {
+    const setCommandPosition = (x, y) => {
+        if (!workflowCanvas || !workflowCommandBlock) {
             return;
         }
 
-        commandSlot.innerHTML = `
-            <div class="mounted-command ${escapeHtml(mountedCommand.tone)}">
-                <span>${escapeHtml(mountedCommand.title)}</span>
-                <label class="mounted-input-label">
-                    ${escapeHtml(mountedCommand.fieldLabel)}
-                    <input class="mounted-command-input" type="text" value="${escapeHtml(mountedCommand.fieldValue)}" aria-label="${escapeHtml(mountedCommand.fieldLabel)}">
-                </label>
-            </div>
-        `;
+        const connector = getConnectorSize();
+        const maxX = Math.max(connector.width + 8, workflowCanvas.clientWidth - workflowCommandBlock.offsetWidth - 10);
+        const maxY = Math.max(8, workflowCanvas.clientHeight - workflowCommandBlock.offsetHeight - 8);
+
+        commandPosition = {
+            x: clamp(x, connector.width + 8, maxX),
+            y: clamp(y, 8, maxY)
+        };
+
+        workflowCommandBlock.style.left = `${commandPosition.x}px`;
+        workflowCommandBlock.style.top = `${commandPosition.y}px`;
     };
 
-    const mountCommand = (command) => {
-        mountedCommand = command;
-        renderMountedCommand();
+    const getDefaultCommandPosition = () => {
+        if (!workflowCanvas || !workflowCommandBlock) {
+            return { x: 430, y: 35 };
+        }
+
+        if (workflowCanvas.clientWidth < 620) {
+            return {
+                x: 92,
+                y: 210
+            };
+        }
+
+        return {
+            x: Math.max(280, workflowCanvas.clientWidth - workflowCommandBlock.offsetWidth - 54),
+            y: 35
+        };
+    };
+
+    const getConnectionDelta = () => {
+        const commandCenterY = commandPosition.y + (workflowCommandBlock.offsetHeight / 2);
+        const envCenterY = workflowEnvBlock.offsetTop + (workflowEnvBlock.offsetHeight / 2);
+        const envRight = workflowEnvBlock.offsetLeft + workflowEnvBlock.offsetWidth;
+
+        return {
+            x: commandPosition.x - envRight,
+            y: commandCenterY - envCenterY
+        };
+    };
+
+    const isWithinConnectionRange = (distance) => {
+        const delta = getConnectionDelta();
+        return Math.abs(delta.x) <= distance && Math.abs(delta.y) <= distance;
+    };
+
+    const setConnectionFeedback = (available) => {
+        workflowCanvas?.classList.toggle("is-connection-available", available);
+        workflowCommandBlock?.classList.toggle("is-connection-available", available);
+    };
+
+    const disconnectCommand = (moveToDefaultPosition) => {
+        setConnectionState(null, activeCommand?.id || null, "disconnected");
+        workflowCanvas?.classList.remove("is-connected", "is-connection-available");
+        workflowCommandBlock?.classList.remove("is-connected", "is-connection-available");
+        workflowCommandBlock?.classList.add("is-disconnected");
+
+        if (moveToDefaultPosition) {
+            const position = getDefaultCommandPosition();
+            setCommandPosition(position.x, position.y);
+        }
+
         updateRunButton();
         clearResult();
+    };
+
+    const snapCommand = () => {
+        if (!activeCommand || !workflowEnvBlock || !workflowCommandBlock) {
+            return;
+        }
+
+        const x = workflowEnvBlock.offsetLeft + workflowEnvBlock.offsetWidth;
+        const y = workflowEnvBlock.offsetTop + ((workflowEnvBlock.offsetHeight - workflowCommandBlock.offsetHeight) / 2);
+
+        workflowCommandBlock.classList.add("is-snapping");
+        setCommandPosition(x, y);
+        setConnectionState(activeEnvironment.id, activeCommand.id, "connected");
+        workflowCanvas?.classList.add("is-connected");
+        workflowCanvas?.classList.remove("is-connection-available");
+        workflowCommandBlock?.classList.add("is-connected");
+        workflowCommandBlock?.classList.remove("is-disconnected", "is-connection-available");
+        window.setTimeout(() => workflowCommandBlock.classList.remove("is-snapping"), 190);
+        updateRunButton();
+        clearResult();
+    };
+
+    const updateEnvironment = (envName, envNote, autoConnect = false) => {
+        activeEnvironment = {
+            id: envName,
+            note: envNote
+        };
+
+        envButtons.forEach((button) => {
+            button.classList.toggle("is-active", button.dataset.env === activeEnvironment.id);
+        });
+
+        if (workflowEnvBlock) {
+            workflowEnvBlock.dataset.env = activeEnvironment.id;
+        }
+
+        if (workflowEnvName) {
+            workflowEnvName.textContent = activeEnvironment.id;
+        }
+
+        if (workflowEnvNote) {
+            workflowEnvNote.textContent = activeEnvironment.note;
+        }
+
+        if (autoConnect && activeCommand) {
+            setConnectionState(null, activeCommand.id, "disconnected");
+            workflowCanvas?.classList.remove("is-connected", "is-connection-available");
+            workflowCommandBlock?.classList.remove("is-connected", "is-connection-available");
+            workflowCommandBlock?.classList.add("is-disconnected");
+            snapCommand();
+            return;
+        }
+
+        disconnectCommand(true);
+    };
+
+    const renderCommand = (command, autoConnect = false) => {
+        if (!command || !workflowCommandBlock) {
+            return;
+        }
+
+        activeCommand = command;
+        workflowCommandBlock.dataset.command = command.id;
+        workflowCommandBlock.className = `workflow-command-block ${command.tone} is-disconnected`;
+        workflowCommandTitle.textContent = command.title;
+        workflowCommandFieldLabel.textContent = command.fieldLabel;
+        workflowCommandInput.value = command.fieldValue;
+        workflowCommandInput.setAttribute("aria-label", command.fieldLabel);
+
+        if (autoConnect) {
+            snapCommand();
+            return;
+        }
+
+        disconnectCommand(true);
     };
 
     const buildTable = (headers, rows) => `
@@ -227,26 +371,26 @@ if (builderLayout) {
         if (command.id === "customer") {
             return buildTable(
                     ["customer_id", "customer_name", "status", "environment"],
-                    [[value || "101", "Ahmed", "Active", activeEnv]]
+                    [[value || "101", "Ahmed", "Active", connectionState.environmentId]]
             );
         }
 
         if (command.id === "orders") {
             return buildTable(
                     ["order_status", "order_count", "environment"],
-                    [[value || "ALL", activeEnv === "SIT" ? "42" : "39", activeEnv]]
+                    [[value || "ALL", connectionState.environmentId === "SIT" ? "42" : "39", connectionState.environmentId]]
             );
         }
 
         return buildTable(
                 ["username", "last_command", "status", "environment"],
-                [[value || "qa_user", command.title, "SUCCESS", activeEnv]]
+                [[value || "qa_user", command.title, "SUCCESS", connectionState.environmentId]]
         );
     };
 
     envButtons.forEach((button) => {
         button.addEventListener("click", () => {
-            updateEnvironment(button.dataset.env);
+            updateEnvironment(button.dataset.env, button.dataset.envNote, true);
         });
 
         button.addEventListener("dragover", (event) => {
@@ -261,18 +405,13 @@ if (builderLayout) {
         button.addEventListener("drop", (event) => {
             event.preventDefault();
             button.classList.remove("is-drag-over");
-            updateEnvironment(button.dataset.env);
-
-            const command = commandsById.get(event.dataTransfer.getData("text/plain"));
-            if (command) {
-                mountCommand(command);
-            }
+            updateEnvironment(button.dataset.env, button.dataset.envNote);
         });
     });
 
     commandBlocks.forEach((commandBlock) => {
         commandBlock.addEventListener("click", () => {
-            mountCommand(getCommandFromBlock(commandBlock));
+            renderCommand(getCommandFromBlock(commandBlock), true);
         });
 
         commandBlock.addEventListener("dragstart", (event) => {
@@ -286,41 +425,106 @@ if (builderLayout) {
         });
     });
 
-    envStage?.addEventListener("dragover", (event) => {
+    workflowCanvas?.addEventListener("dragover", (event) => {
         event.preventDefault();
-        envStage.classList.add("is-drag-over");
     });
 
-    envStage?.addEventListener("dragleave", () => {
-        envStage.classList.remove("is-drag-over");
-    });
-
-    envStage?.addEventListener("drop", (event) => {
+    workflowCanvas?.addEventListener("drop", (event) => {
         event.preventDefault();
-        envStage.classList.remove("is-drag-over");
 
         const command = commandsById.get(event.dataTransfer.getData("text/plain"));
         if (command) {
-            mountCommand(command);
+            renderCommand(command);
         }
     });
 
-    runButton?.addEventListener("click", () => {
-        if (!mountedCommand || !resultOutput) {
+    workflowCommandBlock?.addEventListener("pointerdown", (event) => {
+        if (event.target.closest("input")) {
             return;
         }
 
-        const inputValue = document.querySelector(".mounted-command-input")?.value.trim() || mountedCommand.fieldValue;
+        event.preventDefault();
+        workflowCommandBlock.setPointerCapture(event.pointerId);
+
+        const canvasRect = workflowCanvas.getBoundingClientRect();
+        dragState = {
+            pointerId: event.pointerId,
+            offsetX: event.clientX - canvasRect.left - commandPosition.x,
+            offsetY: event.clientY - canvasRect.top - commandPosition.y
+        };
+
+        workflowCommandBlock.classList.remove("is-snapping");
+        workflowCommandBlock.classList.add("is-dragging");
+    });
+
+    workflowCommandBlock?.addEventListener("pointermove", (event) => {
+        if (!dragState || dragState.pointerId !== event.pointerId) {
+            return;
+        }
+
+        const canvasRect = workflowCanvas.getBoundingClientRect();
+        setCommandPosition(
+                event.clientX - canvasRect.left - dragState.offsetX,
+                event.clientY - canvasRect.top - dragState.offsetY
+        );
+
+        const nearConnection = isWithinConnectionRange(CONNECT_DISTANCE);
+        setConnectionFeedback(nearConnection);
+
+        if (connectionState.connectionStatus === "connected" && !isWithinConnectionRange(DISCONNECT_DISTANCE)) {
+            disconnectCommand(false);
+        }
+    });
+
+    workflowCommandBlock?.addEventListener("pointerup", (event) => {
+        if (!dragState || dragState.pointerId !== event.pointerId) {
+            return;
+        }
+
+        workflowCommandBlock.releasePointerCapture(event.pointerId);
+        workflowCommandBlock.classList.remove("is-dragging");
+        dragState = null;
+
+        if (isWithinConnectionRange(CONNECT_DISTANCE)) {
+            snapCommand();
+            return;
+        }
+
+        disconnectCommand(false);
+    });
+
+    workflowCommandBlock?.addEventListener("pointercancel", () => {
+        workflowCommandBlock.classList.remove("is-dragging");
+        dragState = null;
+        setConnectionFeedback(false);
+    });
+
+    runButton?.addEventListener("click", () => {
+        if (!activeCommand || connectionState.connectionStatus !== "connected" || !resultOutput) {
+            return;
+        }
+
+        const inputValue = workflowCommandInput?.value.trim() || activeCommand.fieldValue;
 
         resultOutput.classList.remove("is-empty");
         resultOutput.innerHTML = `
             <div class="result-status">
                 <span>SUCCESS</span>
-                <span>${escapeHtml(activeEnv)}</span>
+                <span>${escapeHtml(connectionState.environmentId)}</span>
             </div>
-            ${buildResult(mountedCommand, inputValue)}
+            ${buildResult(activeCommand, inputValue)}
         `;
     });
 
-    updateEnvironment(activeEnv);
+    window.addEventListener("resize", () => {
+        if (connectionState.connectionStatus === "connected") {
+            snapCommand();
+            return;
+        }
+
+        setCommandPosition(commandPosition.x, commandPosition.y);
+    });
+
+    renderCommand(getCommandFromBlock(commandBlocks[0]));
+    updateEnvironment(activeEnvironment.id, activeEnvironment.note);
 }
