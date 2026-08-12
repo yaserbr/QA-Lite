@@ -10,14 +10,91 @@
 </head>
 <body>
 <main class="dashboard-page">
-    <section class="dashboard-panel">
-        <p class="eyebrow">QA Lite</p>
-        <h1>Dashboard</h1>
-        <p>You are signed in successfully.</p>
-        <form th:action="@{/logout}" th:attr="data-login-url=@{/login(returning=true)}" method="post" class="logout-form">
+    <header class="dashboard-topbar">
+        <div class="dashboard-brand">
+            <div class="brand-mark dashboard-brand-mark">QL</div>
+            <div>
+                <strong>QA Lite</strong>
+            </div>
+        </div>
+
+        <form th:action="@{/logout}" th:attr="data-login-url=@{/login(returning=true)}" method="post" class="logout-form dashboard-logout">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <button type="submit">Logout</button>
         </form>
+    </header>
+
+    <section class="builder-layout" aria-label="SQL execution builder">
+        <aside class="env-rail" aria-label="Environments">
+            <p class="section-heading">Environment</p>
+            <button type="button" class="env-container is-active" data-env="SIT" data-env-note="Integration">
+                <span class="env-label">SIT</span>
+                <span class="env-note">Integration</span>
+            </button>
+            <button type="button" class="env-container" data-env="UAT" data-env-note="Acceptance">
+                <span class="env-label">UAT</span>
+                <span class="env-note">Acceptance</span>
+            </button>
+        </aside>
+
+        <section class="workspace-panel" aria-label="Workspace">
+            <div class="workspace-header">
+                <div>
+                    <p class="section-heading">Build execution</p>
+                </div>
+                <button type="button" class="run-button workspace-run-button" id="run-command" disabled>Execute</button>
+            </div>
+
+            <div class="mount-zone">
+                <div class="env-stage" id="env-stage">
+                    <div class="env-stage-top">
+                        <strong id="stage-env-name">SIT</strong>
+                    </div>
+                    <div class="command-slot" id="command-slot">
+                        <span class="slot-state">No command mounted</span>
+                    </div>
+                </div>
+            </div>
+
+            <section class="result-panel" aria-label="Result">
+                <p class="section-heading">Result</p>
+                <div class="result-output is-empty" id="result-output">No execution yet.</div>
+            </section>
+        </section>
+
+        <aside class="command-shelf" aria-label="SQL blocks">
+            <p class="section-heading">SQL Blocks</p>
+            <button
+                    type="button"
+                    class="command-block is-blue"
+                    draggable="true"
+                    data-command="customer"
+                    data-title="Get Customer Info"
+                    data-field-label="Customer ID"
+                    data-field-value="101">
+                <span class="block-title">Get Customer Info</span>
+            </button>
+            <button
+                    type="button"
+                    class="command-block is-green"
+                    draggable="true"
+                    data-command="orders"
+                    data-title="Count Sample Orders"
+                    data-field-label="Order Status"
+                    data-field-value="ALL">
+                <span class="block-title">Count Sample Orders</span>
+            </button>
+            <button
+                    type="button"
+                    class="command-block is-amber"
+                    draggable="true"
+                    data-command="history"
+                    data-title="Get Execution History"
+                    data-field-label="Username"
+                    data-field-value="qa_user">
+                <span class="block-title">Get Execution History</span>
+            </button>
+        </aside>
     </section>
 </main>
 </body>
