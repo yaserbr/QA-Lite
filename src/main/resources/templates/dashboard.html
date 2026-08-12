@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>QA Lite | Dashboard</title>
+    <link rel="icon" type="image/webp" th:href="@{/images/MobilyLogo.svg.webp}">
     <link rel="preload" as="image" th:href="@{/images/login-visual.webp}">
     <link rel="stylesheet" th:href="@{/css/login.css}">
     <script defer th:src="@{/js/page-transition.js}"></script>
@@ -12,13 +13,20 @@
 <main class="dashboard-page">
     <header class="dashboard-topbar">
         <div class="dashboard-brand">
-            <div class="brand-mark dashboard-brand-mark">QL</div>
+            <img class="brand-mark brand-logo dashboard-brand-mark" th:src="@{/images/splash-icon.png}" alt="Mobily logo">
             <strong>QA Lite</strong>
         </div>
 
         <form th:action="@{/logout}" th:attr="data-login-url=@{/login(returning=true)}" method="post" class="logout-form dashboard-logout">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-            <button type="submit">Logout</button>
+            <button type="submit" aria-label="Logout" title="Logout">
+                <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M10 17l5-5-5-5"></path>
+                    <path d="M15 12H3"></path>
+                    <path d="M21 19V5a2 2 0 0 0-2-2h-6"></path>
+                    <path d="M13 21h6a2 2 0 0 0 2-2"></path>
+                </svg>
+            </button>
         </form>
     </header>
 

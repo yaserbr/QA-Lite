@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>QA Lite | Login</title>
+    <link rel="icon" type="image/webp" th:href="@{/images/MobilyLogo.svg.webp}">
     <link rel="preload" as="image" th:href="@{/images/login-visual.webp}">
     <link rel="stylesheet" th:href="@{/css/login.css}">
     <script defer th:src="@{/js/page-transition.js}"></script>
@@ -12,11 +13,6 @@
 <main class="login-page" th:classappend="${param.returning != null} ? ' is-returning' : ''">
     <div class="login-visual-layer" aria-hidden="true">
         <img th:src="@{/images/login-visual.webp}" alt="" fetchpriority="high">
-    </div>
-
-    <div class="brand-corner">
-        <div class="brand-mark">QL</div>
-        <span>QA Lite</span>
     </div>
 
     <section class="login-shell" aria-label="QA Lite login">

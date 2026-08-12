@@ -5,9 +5,44 @@ const dashboardPage = document.querySelector(".dashboard-page");
 const logoutForm = document.querySelector(".logout-form");
 const LOGIN_RETURN_DURATION = 980;
 const DASHBOARD_EXIT_DURATION = 760;
+const ASYNC_HEADERS = {
+    "X-Requested-With": "XMLHttpRequest"
+};
 
 const forceReflow = (element) => {
     element.getBoundingClientRect();
+};
+
+const startPageExit = (page) => {
+    forceReflow(page);
+    window.requestAnimationFrame(() => page.classList.add("is-leaving"));
+};
+
+const postForm = (form) => fetch(form.action, {
+    method: "POST",
+    body: new FormData(form),
+    credentials: "same-origin",
+    headers: ASYNC_HEADERS
+});
+
+const isLoginFailureResponse = (response, loginUrl) => {
+    if (!response.url) {
+        return false;
+    }
+
+    const responseUrl = new URL(response.url, window.location.origin);
+    return responseUrl.pathname === loginUrl.pathname && (response.redirected || responseUrl.search.includes("error"));
+};
+
+const setButtonState = (button, text, disabled) => {
+    button.disabled = disabled;
+    button.textContent = text;
+};
+
+const setIconButtonState = (button, label, disabled) => {
+    button.disabled = disabled;
+    button.title = label;
+    button.setAttribute("aria-label", label);
 };
 
 const waitForLoginVisual = async () => {
@@ -58,46 +93,26 @@ if (loginPage && loginForm) {
 
         const submitButton = loginForm.querySelector("button[type='submit']");
         const successUrl = loginForm.dataset.successUrl || "/";
-        const formData = new FormData(loginForm);
         const loginUrl = new URL(loginForm.action, window.location.origin);
 
-        const isLoginFailureResponse = (response) => {
-            if (!response.url) {
-                return false;
-            }
-
-            const responseUrl = new URL(response.url, window.location.origin);
-            return responseUrl.pathname === loginUrl.pathname && (response.redirected || responseUrl.search.includes("error"));
-        };
-
         loginError?.classList.add("is-hidden");
-        submitButton.disabled = true;
-        submitButton.textContent = "Signing in...";
+        setButtonState(submitButton, "Signing in...", true);
 
         try {
-            const response = await fetch(loginForm.action, {
-                method: "POST",
-                body: formData,
-                credentials: "same-origin",
-                headers: {
-                    "X-Requested-With": "XMLHttpRequest"
-                }
-            });
+            const response = await postForm(loginForm);
 
-            if (!response.ok || isLoginFailureResponse(response)) {
+            if (!response.ok || isLoginFailureResponse(response, loginUrl)) {
                 throw new Error("Login failed");
             }
 
             loginPage.classList.remove("is-returning", "is-entered");
-            forceReflow(loginPage);
-            loginPage.classList.add("is-leaving");
+            startPageExit(loginPage);
             window.setTimeout(() => {
                 window.location.assign(successUrl);
             }, 760);
         } catch (error) {
             loginError?.classList.remove("is-hidden");
-            submitButton.disabled = false;
-            submitButton.textContent = "Login";
+            setButtonState(submitButton, "Login", false);
         }
     });
 }
@@ -108,25 +123,13 @@ if (dashboardPage && logoutForm) {
 
         const submitButton = logoutForm.querySelector("button[type='submit']");
         const loginUrl = logoutForm.dataset.loginUrl || "/login?returning=true";
-        const formData = new FormData(logoutForm);
 
-        submitButton.disabled = true;
-        submitButton.textContent = "Signing out...";
-        forceReflow(dashboardPage);
-        window.requestAnimationFrame(() => {
-            dashboardPage.classList.add("is-leaving");
-        });
+        setIconButtonState(submitButton, "Signing out...", true);
+        startPageExit(dashboardPage);
 
         window.setTimeout(async () => {
             try {
-                const response = await fetch(logoutForm.action, {
-                    method: "POST",
-                    body: formData,
-                    credentials: "same-origin",
-                    headers: {
-                        "X-Requested-With": "XMLHttpRequest"
-                    }
-                });
+                const response = await postForm(logoutForm);
 
                 if (!response.ok) {
                     throw new Error("Logout failed");
@@ -135,8 +138,7 @@ if (dashboardPage && logoutForm) {
                 window.location.assign(loginUrl);
             } catch (error) {
                 dashboardPage.classList.remove("is-leaving");
-                submitButton.disabled = false;
-                submitButton.textContent = "Logout";
+                setIconButtonState(submitButton, "Logout", false);
             }
         }, DASHBOARD_EXIT_DURATION);
     });
@@ -162,10 +164,12 @@ if (builderLayout) {
     const DISCONNECT_DISTANCE = 92;
     const activeEnvironmentButton = envButtons.find((button) => button.classList.contains("is-active")) || envButtons[0];
 
-    let activeEnvironment = {
-        id: activeEnvironmentButton?.dataset.env || "SIT",
-        note: activeEnvironmentButton?.dataset.envNote || "Integration"
-    };
+    const getEnvironmentFromButton = (button) => ({
+        id: button?.dataset.env || "SIT",
+        note: button?.dataset.envNote || "Integration"
+    });
+
+    let activeEnvironment = getEnvironmentFromButton(activeEnvironmentButton);
     let activeCommand = null;
     let commandPosition = { x: 0, y: 0 };
     let dragState = null;
@@ -329,11 +333,8 @@ if (builderLayout) {
         clearResult();
     };
 
-    const updateEnvironment = (envName, envNote, autoConnect = false) => {
-        activeEnvironment = {
-            id: envName,
-            note: envNote
-        };
+    const updateEnvironment = (environment, autoConnect = false) => {
+        activeEnvironment = environment;
 
         envButtons.forEach((button) => {
             button.classList.toggle("is-active", button.dataset.env === activeEnvironment.id);
@@ -415,7 +416,7 @@ if (builderLayout) {
 
     envButtons.forEach((button) => {
         button.addEventListener("click", () => {
-            updateEnvironment(button.dataset.env, button.dataset.envNote, true);
+            updateEnvironment(getEnvironmentFromButton(button), true);
         });
 
         button.addEventListener("dragover", (event) => {
@@ -430,7 +431,7 @@ if (builderLayout) {
         button.addEventListener("drop", (event) => {
             event.preventDefault();
             button.classList.remove("is-drag-over");
-            updateEnvironment(button.dataset.env, button.dataset.envNote);
+            updateEnvironment(getEnvironmentFromButton(button));
         });
     });
 
@@ -551,5 +552,5 @@ if (builderLayout) {
     });
 
     renderCommand(commandsById.get(commandBlocks[0]?.dataset.command));
-    updateEnvironment(activeEnvironment.id, activeEnvironment.note);
+    updateEnvironment(activeEnvironment);
 }
