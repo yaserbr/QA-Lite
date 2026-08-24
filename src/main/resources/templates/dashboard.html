@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,103 +10,99 @@
     <link rel="stylesheet" th:href="@{/css/login.css}">
     <script defer th:src="@{/js/page-transition.js}"></script>
 </head>
+
 <body>
-<main class="dashboard-page">
-    <header class="dashboard-topbar">
-        <div class="dashboard-brand">
-            <img class="brand-mark brand-logo dashboard-brand-mark" th:src="@{/images/splash-icon.png}" alt="Mobily logo">
-            <strong>QA Lite</strong>
-        </div>
-
-        <form th:action="@{/logout}" th:attr="data-login-url=@{/login(returning=true)}" method="post" class="logout-form dashboard-logout">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-            <button type="submit" aria-label="Logout" title="Logout">
-                <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M10 17l5-5-5-5"></path>
-                    <path d="M15 12H3"></path>
-                    <path d="M21 19V5a2 2 0 0 0-2-2h-6"></path>
-                    <path d="M13 21h6a2 2 0 0 0 2-2"></path>
-                </svg>
-            </button>
-        </form>
-    </header>
-
-    <section class="builder-layout" aria-label="SQL execution builder">
-        <aside class="env-rail" aria-label="Environments">
-            <p class="section-heading">Environment</p>
-            <button type="button" class="env-container is-active" data-env="SIT" data-env-note="Integration">
-                <span class="env-label">SIT</span>
-                <span class="env-note">Integration</span>
-            </button>
-            <button type="button" class="env-container" data-env="UAT" data-env-note="Acceptance">
-                <span class="env-label">UAT</span>
-                <span class="env-note">Acceptance</span>
-            </button>
-        </aside>
-
-        <section class="workspace-panel" aria-label="Workspace">
-            <div class="workspace-header">
-                <div>
-                    <p class="section-heading">Build execution</p>
-                </div>
-                <button type="button" class="run-button workspace-run-button" id="run-command" disabled>Execute</button>
+    <main class="dashboard-page">
+        <header class="dashboard-topbar">
+            <div class="dashboard-brand">
+                <img class="brand-mark brand-logo dashboard-brand-mark" th:src="@{/images/splash-icon.png}"
+                    alt="Mobily logo">
+                <strong>QA Lite</strong>
             </div>
 
-            <div class="workflow-canvas" id="workflow-canvas">
-                <div class="workflow-env-block" id="workflow-env-block" data-env="SIT">
-                    <span class="workflow-env-name" id="workflow-env-name">SIT</span>
-                    <span class="workflow-env-note" id="workflow-env-note">Integration</span>
-                </div>
-
-                <div class="workflow-command-block is-blue is-disconnected" id="workflow-command-block" data-command="customer">
-                    <span class="workflow-command-title" id="workflow-command-title">Get Customer Info</span>
-                    <label class="workflow-command-input-label">
-                        <span id="workflow-command-field-label">Customer ID</span>
-                        <input id="workflow-command-input" type="text" value="101" aria-label="Customer ID">
-                    </label>
-                </div>
+            <div class="dashboard-actions">
+                <a th:if="${isAdmin}" class="topbar-link" th:href="@{/admin}">Admin</a>
+                <form th:action="@{/logout}" th:attr="data-login-url=@{/login(returning=true)}" method="post"
+                    class="logout-form dashboard-logout">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <button type="submit" aria-label="Logout" title="Logout">
+                        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M10 17l5-5-5-5"></path>
+                            <path d="M15 12H3"></path>
+                            <path d="M21 19V5a2 2 0 0 0-2-2h-6"></path>
+                            <path d="M13 21h6a2 2 0 0 0 2-2"></path>
+                        </svg>
+                    </button>
+                </form>
             </div>
+        </header>
 
-            <section class="result-panel" aria-label="Result">
-                <p class="section-heading">Result</p>
-                <div class="result-output is-empty" id="result-output">No execution yet.</div>
+        <section class="builder-layout" aria-label="SQL execution builder">
+            <aside class="env-rail" aria-label="Environments">
+                <p class="section-heading">Environment</p>
+                <p class="rail-empty" th:if="${#lists.isEmpty(environments)}">No environments allowed.</p>
+                <button type="button" class="env-container" th:each="environment, status : ${environments}"
+                    th:classappend="${status.index == 0} ? ' is-active' : ''" th:data-env="${environment.name}"
+                    th:data-env-note="${environment.note}">
+                    <span class="env-label" th:text="${environment.name}">SIT</span>
+                    <span class="env-note" th:text="${environment.note}">Integration</span>
+                </button>
+            </aside>
+
+            <section class="workspace-panel" aria-label="Workspace">
+                <div class="workspace-header">
+                    <div>
+                        <p class="section-heading">Build execution</p>
+                    </div>
+                    <button type="button" class="run-button workspace-run-button" id="run-command"
+                        disabled>Execute</button>
+                </div>
+
+                <div class="workflow-canvas" id="workflow-canvas">
+                    <div class="workflow-empty" th:if="${activeEnvironment == null || activeCommand == null}">
+                        Add access from Admin to start.
+                    </div>
+
+                    <div class="workflow-env-block" id="workflow-env-block" th:if="${activeEnvironment != null}"
+                        th:data-env="${activeEnvironment.name}">
+                        <span class="workflow-env-name" id="workflow-env-name"
+                            th:text="${activeEnvironment.name}">SIT</span>
+                        <span class="workflow-env-note" id="workflow-env-note"
+                            th:text="${activeEnvironment.note}">Integration</span>
+                    </div>
+
+                    <div id="workflow-command-block" th:if="${activeCommand != null}"
+                        th:class="${'workflow-command-block ' + activeCommand.tone + ' is-disconnected'}"
+                        th:data-command="${activeCommand.commandId}">
+                        <span class="workflow-command-title" id="workflow-command-title"
+                            th:text="${activeCommand.sqlName}">Get Customer Info</span>
+                        <label class="workflow-command-input-label">
+                            <span id="workflow-command-field-label" th:text="${activeCommand.fieldLabel}">Customer
+                                ID</span>
+                            <input id="workflow-command-input" type="text" th:value="${activeCommand.fieldValue}"
+                                th:attr="aria-label=${activeCommand.fieldLabel}">
+                        </label>
+                    </div>
+                </div>
+
+                <section class="result-panel" aria-label="Result">
+                    <p class="section-heading">Result</p>
+                    <div class="result-output is-empty" id="result-output">No execution yet.</div>
+                </section>
             </section>
-        </section>
 
-        <aside class="command-shelf" aria-label="SQL blocks">
-            <p class="section-heading">SQL Blocks</p>
-            <button
-                    type="button"
-                    class="command-block is-blue"
-                    draggable="true"
-                    data-command="customer"
-                    data-title="Get Customer Info"
-                    data-field-label="Customer ID"
-                    data-field-value="101">
-                <span class="block-title">Get Customer Info</span>
-            </button>
-            <button
-                    type="button"
-                    class="command-block is-green"
-                    draggable="true"
-                    data-command="orders"
-                    data-title="Count Sample Orders"
-                    data-field-label="Order Status"
-                    data-field-value="ALL">
-                <span class="block-title">Count Sample Orders</span>
-            </button>
-            <button
-                    type="button"
-                    class="command-block is-amber"
-                    draggable="true"
-                    data-command="history"
-                    data-title="Get Execution History"
-                    data-field-label="Username"
-                    data-field-value="qa_user">
-                <span class="block-title">Get Execution History</span>
-            </button>
-        </aside>
-    </section>
-</main>
+            <aside class="command-shelf" aria-label="SQL blocks">
+                <p class="section-heading">SQL Blocks</p>
+                <p class="rail-empty" th:if="${#lists.isEmpty(sqlCommands)}">No SQL commands allowed.</p>
+                <button type="button" class="command-block" th:each="command : ${sqlCommands}"
+                    th:classappend="${command.tone}" draggable="true" th:data-command="${command.commandId}"
+                    th:data-title="${command.sqlName}" th:data-field-label="${command.fieldLabel}"
+                    th:data-field-value="${command.fieldValue}">
+                    <span class="block-title" th:text="${command.sqlName}">Get Customer Info</span>
+                </button>
+            </aside>
+        </section>
+    </main>
 </body>
+
 </html>

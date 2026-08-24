@@ -24,8 +24,15 @@ server:
     context-path: /QaLite
     session:
       timeout: 30m
+      cookie:
+        http-only: true
+        same-site: strict
 
 logging:
   level:
     org.springframework.security: INFO
     com.mobily.qalite: INFO
+
+qalite:
+  secrets:
+    encryption-key: ${QALITE_SECRET_KEY:}

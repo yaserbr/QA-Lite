@@ -89,9 +89,13 @@ if (loginPage?.classList.contains("is-returning")) {
 
 if (loginPage && loginForm) {
     loginForm.addEventListener("submit", async (event) => {
+        if (event.submitter?.dataset.nativeSubmit === "true") {
+            return;
+        }
+
         event.preventDefault();
 
-        const submitButton = loginForm.querySelector("button[type='submit']");
+        const submitButton = event.submitter || loginForm.querySelector("button[type='submit']");
         const successUrl = loginForm.dataset.successUrl || "/";
         const loginUrl = new URL(loginForm.action, window.location.origin);
 
@@ -165,8 +169,8 @@ if (builderLayout) {
     const activeEnvironmentButton = envButtons.find((button) => button.classList.contains("is-active")) || envButtons[0];
 
     const getEnvironmentFromButton = (button) => ({
-        id: button?.dataset.env || "SIT",
-        note: button?.dataset.envNote || "Integration"
+        id: button?.dataset.env || "",
+        note: button?.dataset.envNote || ""
     });
 
     let activeEnvironment = getEnvironmentFromButton(activeEnvironmentButton);
@@ -394,23 +398,32 @@ if (builderLayout) {
     `;
 
     const buildResult = (command, value) => {
-        if (command.id === "customer") {
+        const commandName = command.title.toLowerCase();
+
+        if (commandName.includes("customer")) {
             return buildTable(
                     ["customer_id", "customer_name", "status", "environment"],
                     [[value || "101", "Ahmed", "Active", connectionState.environmentId]]
             );
         }
 
-        if (command.id === "orders") {
+        if (commandName.includes("order")) {
             return buildTable(
                     ["order_status", "order_count", "environment"],
                     [[value || "ALL", connectionState.environmentId === "SIT" ? "42" : "39", connectionState.environmentId]]
             );
         }
 
+        if (commandName.includes("history") || commandName.includes("user")) {
+            return buildTable(
+                    ["username", "last_command", "status", "environment"],
+                    [[value || "qa_user", command.title, "SUCCESS", connectionState.environmentId]]
+            );
+        }
+
         return buildTable(
-                ["username", "last_command", "status", "environment"],
-                [[value || "qa_user", command.title, "SUCCESS", connectionState.environmentId]]
+                ["input", "command", "status", "environment"],
+                [[value || "-", command.title, "SUCCESS", connectionState.environmentId]]
         );
     };
 

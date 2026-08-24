@@ -78,7 +78,7 @@ body {
     border-radius: 12px;
     color: #fff;
     font-size: 14px;
-    font-weight: 900;
+    font-weight: 800;
 }
 
 .brand-logo {
@@ -120,14 +120,14 @@ body {
     height: 30px;
     font-size: 56px;
     line-height: 1;
-    font-weight: 900;
+    font-weight: 800;
 }
 
 .login-quote p {
     margin: 18px 0 14px;
     font-size: clamp(24px, min(3vw, 5vh), 40px);
     line-height: 1.2;
-    font-weight: 650;
+    font-weight: 500;
     letter-spacing: 0;
 }
 
@@ -264,7 +264,7 @@ body {
     background: var(--accent);
     color: #111;
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
     transition: background 160ms ease, color 160ms ease, transform 160ms ease;
 }
@@ -274,12 +274,26 @@ body {
     transform: translateY(-1px);
 }
 
+.login-form .auth-secondary-button {
+    margin-top: -4px;
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.88);
+    font-weight: 500;
+}
+
+.login-form .auth-secondary-button:hover {
+    border-color: rgba(255, 255, 255, 0.58);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
 .alert {
     border-radius: 12px;
     padding: 13px 15px;
     margin-bottom: 18px;
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 600;
 }
 
 .alert.is-hidden {
@@ -339,19 +353,28 @@ body {
 
 .dashboard-brand strong {
     display: block;
-    color: #172021;
+    color: #183637;
     font-size: 18px;
+    font-weight: 600;
     line-height: 1.15;
 }
 
-.dashboard-logout {
-    margin: 0;
+.dashboard-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     transition: transform 680ms cubic-bezier(0.76, 0, 0.24, 1), opacity 520ms ease;
     will-change: transform, opacity;
 }
 
+.dashboard-logout {
+    margin: 0;
+}
+
 .dashboard-logout button,
-.run-button {
+.run-button,
+.topbar-link,
+.admin-submit {
     height: 44px;
     border: 0;
     border-radius: 8px;
@@ -360,9 +383,16 @@ body {
     box-shadow: 0 12px 26px rgba(17, 110, 100, 0.22);
     color: #fff;
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 600;
     cursor: pointer;
     transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease, opacity 160ms ease;
+}
+
+.topbar-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
 }
 
 .dashboard-logout button {
@@ -385,7 +415,9 @@ body {
 }
 
 .dashboard-logout button:hover,
-.run-button:hover:not(:disabled) {
+.run-button:hover:not(:disabled),
+.topbar-link:hover,
+.admin-submit:hover {
     background: linear-gradient(180deg, #20a07f, #14785c);
     box-shadow: 0 16px 30px rgba(20, 120, 92, 0.26);
     transform: translateY(-1px);
@@ -442,9 +474,20 @@ body {
     margin: 0;
     color: rgba(255, 255, 255, 0.72);
     font-size: 12px;
-    font-weight: 900;
+    font-weight: 700;
     letter-spacing: 0;
     text-transform: uppercase;
+}
+
+.rail-empty {
+    margin: 0;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 8px;
+    padding: 14px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.35;
 }
 
 .workspace-header {
@@ -505,14 +548,14 @@ body {
 .env-label {
     font-size: 24px;
     line-height: 1;
-    font-weight: 900;
+    font-weight: 800;
 }
 
 .env-note {
     margin-top: 10px;
     color: currentColor;
     font-size: 13px;
-    font-weight: 750;
+    font-weight: 500;
     opacity: 0.72;
 }
 
@@ -527,6 +570,19 @@ body {
     background: linear-gradient(180deg, rgba(234, 242, 240, 0.78), rgba(211, 225, 221, 0.62));
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42), 0 18px 48px rgba(12, 14, 22, 0.08);
     overflow: hidden;
+}
+
+.workflow-empty {
+    position: absolute;
+    inset: 18px;
+    display: grid;
+    place-items: center;
+    border: 1px dashed rgba(23, 32, 33, 0.16);
+    border-radius: 8px;
+    color: #667472;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
 }
 
 .workflow-env-block,
@@ -572,7 +628,7 @@ body {
     position: relative;
     z-index: 1;
     line-height: 1.1;
-    font-weight: 900;
+    font-weight: 700;
 }
 
 .workflow-env-name {
@@ -584,7 +640,7 @@ body {
     z-index: 1;
     color: rgba(255, 255, 255, 0.68);
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 500;
 }
 
 .command-block,
@@ -651,7 +707,7 @@ body {
     display: block;
     font-size: 14px;
     line-height: 1.25;
-    font-weight: 900;
+    font-weight: 700;
 }
 
 .workflow-command-block {
@@ -665,7 +721,7 @@ body {
     gap: 12px 14px;
     padding: 22px 22px 22px 38px;
     font-size: 15px;
-    font-weight: 900;
+    font-weight: 500;
     cursor: grab;
     touch-action: none;
     will-change: transform, left, top;
@@ -731,7 +787,7 @@ body {
     gap: 8px;
     color: rgba(255, 255, 255, 0.76);
     font-size: 13px;
-    font-weight: 850;
+    font-weight: 500;
 }
 
 .workflow-command-block input {
@@ -790,7 +846,7 @@ body {
     place-items: center;
     color: #667472;
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 500;
 }
 
 .result-status {
@@ -801,7 +857,7 @@ body {
     margin-bottom: 12px;
     color: #14785c;
     font-size: 13px;
-    font-weight: 900;
+    font-weight: 700;
 }
 
 .result-table {
@@ -821,14 +877,310 @@ body {
 .result-table th {
     color: #667472;
     font-size: 12px;
+    font-weight: 600;
     text-transform: uppercase;
+}
+
+.admin-page {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    color: #172021;
+    background: linear-gradient(135deg, #eef3f2 0%, #dfe8e6 48%, #d4ddd8 100%);
+    overflow: auto;
+}
+
+.admin-layout {
+    display: grid;
+    gap: 16px;
+    margin-top: 18px;
+}
+
+.admin-panels {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.admin-panel {
+    min-width: 0;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 8px;
+    padding: 18px;
+    background: linear-gradient(180deg, rgba(24, 54, 55, 0.54), rgba(24, 54, 55, 0.34));
+    box-shadow: 0 28px 90px rgba(16, 36, 40, 0.18);
+    backdrop-filter: blur(20px);
+}
+
+.admin-title {
+    margin: 8px 0 0;
+    color: #fff;
+    font-size: 24px;
+    line-height: 1.1;
+}
+
+.admin-note {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.admin-form {
+    display: grid;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.admin-form label {
+    color: rgba(255, 255, 255, 0.74);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.field-help {
+    margin: -4px 0 2px;
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.35;
+}
+
+.admin-form input,
+.admin-form select,
+.admin-form textarea {
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.34);
+    border-radius: 6px;
+    padding: 0 12px;
+    background: rgba(234, 242, 240, 0.88);
+    color: #172021;
+    font: inherit;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.admin-form input,
+.admin-form select {
+    height: 40px;
+}
+
+.admin-form textarea {
+    min-height: 132px;
+    padding-block: 12px;
+    resize: vertical;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.admin-form input:focus,
+.admin-form select:focus,
+.admin-form textarea:focus {
+    border-color: rgba(255, 255, 255, 0.8);
+    background: rgba(248, 250, 249, 0.96);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.12);
+}
+
+.admin-submit {
+    justify-self: start;
+    margin-top: 4px;
+    cursor: pointer;
+}
+
+.admin-submit.compact {
+    height: 38px;
+    padding: 0 14px;
+    font-size: 13px;
+}
+
+.admin-flash {
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.admin-flash.is-success {
+    background: rgba(238, 248, 240, 0.92);
+    color: #14785c;
+}
+
+.admin-flash.is-error {
+    background: rgba(255, 235, 231, 0.92);
+    color: #8f403c;
+}
+
+.access-panel {
+    display: grid;
+    gap: 14px;
+}
+
+.access-list {
+    display: grid;
+    gap: 12px;
+}
+
+.access-user {
+    display: grid;
+    gap: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 8px;
+    padding: 14px;
+    background: linear-gradient(180deg, rgba(234, 242, 240, 0.82), rgba(211, 225, 221, 0.68));
+    color: #172021;
+}
+
+.access-user-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.access-user-header strong,
+.access-user-header span {
+    display: block;
+}
+
+.access-user-header strong {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.1;
+}
+
+.access-user-header span {
+    margin-top: 4px;
+    color: #667472;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.permission-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.permission-set {
+    min-width: 0;
+    margin: 0;
+    border: 1px solid rgba(23, 32, 33, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.permission-set legend {
+    padding: 0 6px;
+    color: #183637;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.check-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 0;
+    color: #172021;
+}
+
+.check-row + .check-row {
+    border-top: 1px solid rgba(23, 32, 33, 0.08);
+}
+
+.check-row input {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    accent-color: #14785c;
+}
+
+.check-row strong,
+.check-row small {
+    display: block;
+}
+
+.check-row strong {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.check-row small {
+    margin-top: 3px;
+    color: #667472;
+    font-size: 12px;
+    line-height: 1.3;
+}
+
+.admin-empty {
+    margin: 8px 0 0;
+    color: #667472;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.admin-table-wrap {
+    margin-top: 14px;
+    overflow: auto;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: #fff;
+    font-size: 13px;
+}
+
+.admin-table th,
+.admin-table td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 10px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.admin-table th {
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.admin-table strong,
+.admin-table span {
+    display: block;
+}
+
+.admin-table strong {
+    font-weight: 600;
+}
+
+.admin-table span {
+    margin-top: 4px;
+    color: rgba(255, 255, 255, 0.68);
+    line-height: 1.35;
+}
+
+.admin-table code {
+    display: block;
+    max-height: 92px;
+    min-width: 260px;
+    overflow: auto;
+    white-space: pre-wrap;
+    color: rgba(255, 255, 255, 0.86);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 .dashboard-page.is-leaving {
     opacity: 0.98;
 }
 
-.dashboard-page.is-leaving :is(.dashboard-brand, .dashboard-logout, .env-rail, .workspace-panel, .command-shelf) {
+.dashboard-page.is-leaving :is(.dashboard-brand, .dashboard-actions, .env-rail, .workspace-panel, .command-shelf) {
     opacity: 0;
 }
 
@@ -836,7 +1188,7 @@ body {
     transform: translate3d(-88px, 0, 0);
 }
 
-.dashboard-page.is-leaving .dashboard-logout {
+.dashboard-page.is-leaving .dashboard-actions {
     transform: translate3d(88px, 0, 0);
 }
 
@@ -868,6 +1220,10 @@ body {
 @media (max-width: 1100px) {
     .builder-layout {
         grid-template-columns: 210px minmax(0, 1fr);
+    }
+
+    .admin-panels {
+        grid-template-columns: 1fr;
     }
 
     .command-shelf {
@@ -920,7 +1276,8 @@ body {
 }
 
 @media (max-width: 900px) {
-    .dashboard-page {
+    .dashboard-page,
+    .admin-page {
         height: auto;
         min-height: 100svh;
         padding: 16px;
@@ -958,6 +1315,10 @@ body {
     .workflow-command-block {
         width: min(360px, calc(100% - 84px));
     }
+
+    .permission-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 520px) {
@@ -987,9 +1348,18 @@ body {
         flex-direction: column;
     }
 
+    .dashboard-actions,
+    .dashboard-logout,
     .dashboard-logout button,
-    .run-button {
+    .run-button,
+    .topbar-link {
         width: 100%;
+    }
+
+    .dashboard-actions,
+    .access-user-header {
+        align-items: stretch;
+        flex-direction: column;
     }
 
     .env-rail,
@@ -997,8 +1367,13 @@ body {
         grid-template-columns: 1fr;
     }
 
-    .workspace-panel {
+    .workspace-panel,
+    .admin-panel {
         padding: 14px;
+    }
+
+    .admin-submit.compact {
+        width: 100%;
     }
 }
 

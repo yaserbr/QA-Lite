@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>QA Lite | Admin</title>
+    <link rel="icon" type="image/webp" th:href="@{/images/MobilyLogo.svg.webp}">
+    <link rel="stylesheet" th:href="@{/css/login.css}">
+</head>
+
+<body>
+    <main class="admin-page">
+        <header class="dashboard-topbar">
+            <div class="dashboard-brand">
+                <img class="brand-mark brand-logo dashboard-brand-mark" th:src="@{/images/splash-icon.png}"
+                    alt="Mobily logo">
+                <strong>QA Lite</strong>
+            </div>
+
+            <div class="dashboard-actions">
+                <a class="topbar-link" th:href="@{/}">Dashboard</a>
+                <form th:action="@{/logout}" method="post" class="dashboard-logout">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <button type="submit" aria-label="Logout" title="Logout">
+                        <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M10 17l5-5-5-5"></path>
+                            <path d="M15 12H3"></path>
+                            <path d="M21 19V5a2 2 0 0 0-2-2h-6"></path>
+                            <path d="M13 21h6a2 2 0 0 0 2-2"></path>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <section class="admin-layout" aria-label="Admin management">
+            <div class="admin-flash is-success" th:if="${successMessage}" th:text="${successMessage}"></div>
+            <div class="admin-flash is-error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+            <section class="admin-panels" aria-label="Create admin records">
+                <article class="admin-panel">
+                    <p class="section-heading">Environment</p>
+                    <h1 class="admin-title">Add Environment</h1>
+
+                    <form class="admin-form" th:action="@{/admin/environments}" method="post">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                        <label for="env-name">Name</label>
+                        <input id="env-name" name="name" type="text" placeholder="SIT" required>
+
+                        <label for="env-description">Description</label>
+                        <input id="env-description" name="description" type="text" placeholder="System integration testing">
+
+                        <label for="env-db-type">Database Type</label>
+                        <select id="env-db-type" name="dbType" required>
+                            <option th:each="databaseType : ${databaseTypes}" th:value="${databaseType.value}"
+                                th:text="${databaseType.label}">PostgreSQL</option>
+                        </select>
+
+                        <label for="env-jdbc-url">JDBC URL</label>
+                        <input id="env-jdbc-url" name="jdbcUrl" type="text"
+                            placeholder="jdbc:postgresql://host:5432/database" required>
+                        <p class="field-help">Oracle: jdbc:oracle:thin:@//host:1521/serviceName</p>
+                        <p class="field-help">MongoDB Atlas SQL: jdbc:mongodb://cluster.a.query.mongodb.net/database</p>
+
+                        <label for="env-db-username">Database Username</label>
+                        <input id="env-db-username" name="dbUsername" type="text" placeholder="qa_readonly" required>
+
+                        <label for="env-db-password">DB Password / Secret</label>
+                        <input id="env-db-password" name="dbPasswordValue" type="password" required>
+
+                        <button type="submit" class="admin-submit">Add Environment</button>
+                    </form>
+                </article>
+
+                <article class="admin-panel">
+                    <p class="section-heading">SQL Command</p>
+                    <h1 class="admin-title">Add SQL</h1>
+
+                    <form class="admin-form" th:action="@{/admin/sql}" method="post">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                        <label for="sql-name">Name</label>
+                        <input id="sql-name" name="sqlName" type="text" placeholder="Get Customer Info" required>
+
+                        <label for="sql-description">Description</label>
+                        <input id="sql-description" name="sqlDescription" type="text"
+                            placeholder="Returns customer details">
+
+                        <label for="sql-text">SQL Text</label>
+                        <textarea id="sql-text" name="sqlText" spellcheck="false"
+                            placeholder="select customer_id, customer_name from customers where customer_id = ?" required></textarea>
+
+                        <button type="submit" class="admin-submit">Add SQL</button>
+                    </form>
+                </article>
+            </section>
+
+            <section class="admin-panel access-panel" aria-label="User access">
+                <p class="section-heading">User Access</p>
+                <h1 class="admin-title">Permissions</h1>
+                <p class="admin-note">Admin users automatically have full access. Only standard users need explicit
+                    Environment and SQL permissions.</p>
+
+                <div class="access-list">
+                    <p class="admin-empty" th:if="${#lists.isEmpty(users)}">No standard users yet.</p>
+                    <form class="access-user" th:each="user : ${users}"
+                        th:action="@{/admin/users/{userId}/permissions(userId=${user.userId})}" method="post">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                        <div class="access-user-header">
+                            <div>
+                                <strong th:text="${user.username}">qa_user</strong>
+                                <span th:text="${user.role}">QA_USER</span>
+                            </div>
+                            <button type="submit" class="admin-submit compact">Save Access</button>
+                        </div>
+
+                        <div class="permission-grid">
+                            <fieldset class="permission-set">
+                                <legend>Environments</legend>
+                                <p class="admin-empty" th:if="${#lists.isEmpty(environments)}">No environments yet.</p>
+                                <label class="check-row" th:each="environment : ${environments}">
+                                    <input type="checkbox" name="environmentIds" th:value="${environment.envId}"
+                                        th:checked="${user.environmentIds.contains(environment.envId)}">
+                                    <span>
+                                        <strong th:text="${environment.name}">SIT</strong>
+                                        <small
+                                            th:text="${#strings.isEmpty(environment.description) ? environment.dbType : environment.description}">Integration</small>
+                                    </span>
+                                </label>
+                            </fieldset>
+
+                            <fieldset class="permission-set">
+                                <legend>SQL Commands</legend>
+                                <p class="admin-empty" th:if="${#lists.isEmpty(sqlDefinitions)}">No SQL commands yet.</p>
+                                <label class="check-row" th:each="sql : ${sqlDefinitions}">
+                                    <input type="checkbox" name="sqlIds" th:value="${sql.sqlId}"
+                                        th:checked="${user.sqlIds.contains(sql.sqlId)}">
+                                    <span>
+                                        <strong th:text="${sql.sqlName}">Get Customer Info</strong>
+                                        <small
+                                            th:text="${#strings.isEmpty(sql.sqlDescription) ? 'SQL command' : sql.sqlDescription}">SQL command</small>
+                                    </span>
+                                </label>
+                            </fieldset>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <section class="admin-panels" aria-label="Existing records">
+                <article class="admin-panel">
+                    <p class="section-heading">Current Environments</p>
+                    <div class="admin-table-wrap">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Username</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="environment : ${environments}">
+                                    <td>
+                                        <strong th:text="${environment.name}">SIT</strong>
+                                        <span
+                                            th:text="${#strings.isEmpty(environment.description) ? 'No description' : environment.description}">Integration</span>
+                                    </td>
+                                    <td th:text="${environment.dbType}">POSTGRESQL</td>
+                                    <td th:text="${environment.dbUsername}">qa_readonly</td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(environments)}">
+                                    <td colspan="3">No environments yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+
+                <article class="admin-panel">
+                    <p class="section-heading">Current SQL Commands</p>
+                    <div class="admin-table-wrap">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>SQL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="sql : ${sqlDefinitions}">
+                                    <td>
+                                        <strong th:text="${sql.sqlName}">Get Customer Info</strong>
+                                        <span
+                                            th:text="${#strings.isEmpty(sql.sqlDescription) ? 'No description' : sql.sqlDescription}">Description</span>
+                                    </td>
+                                    <td><code th:text="${sql.sqlText}">select 1</code></td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(sqlDefinitions)}">
+                                    <td colspan="2">No SQL commands yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            </section>
+        </section>
+    </main>
+</body>
+
+</html>
