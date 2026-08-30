@@ -4,6 +4,8 @@ target/
 .env.*
 !.env.example
 .mvn/wrapper/maven-wrapper.jar
+*.log
+/data/
 !**/src/main/**/target/
 !**/src/test/**/target/
 

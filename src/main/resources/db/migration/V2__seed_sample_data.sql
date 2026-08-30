@@ -1,11 +1,13 @@
 insert into users (username, password_hash, role)
-select 'admin', '$2b$10$LEu5FsuwI9KE0QzVHNaAaubOL3oeMm0LdPjOQ1./2oTxaRHZv8yF2', 'ADMIN'
+select 'admin', '$2a$10$q.9rdducGdo/2aDKnglx2OHHQ7MHHBA3ezN28N7ppzPczri2Qxfea', 'ADMIN'
+from dual
 where not exists (
     select 1 from users where username = 'admin'
 );
 
 insert into users (username, password_hash, role)
 select 'qa_user', '$2b$10$uAvn25cbAKzrs66W7iApwuwmlJ7WP.WWycX6pdllK6ZGprfH0lJja', 'QA_USER'
+from dual
 where not exists (
     select 1 from users where username = 'qa_user'
 );
@@ -18,6 +20,7 @@ select
     'jdbc:postgresql://sit.example.local:5432/appdb',
     'qa_readonly',
     'encrypted-placeholder'
+from dual
 where not exists (
     select 1 from environments where name = 'SIT'
 );
@@ -30,6 +33,7 @@ select
     'jdbc:postgresql://uat.example.local:5432/appdb',
     'qa_readonly',
     'encrypted-placeholder'
+from dual
 where not exists (
     select 1 from environments where name = 'UAT'
 );
@@ -39,6 +43,7 @@ select
     'Get Sample Customers',
     'Returns a small sample customer list',
     'select 101 as customer_id, ''Ahmed'' as customer_name union all select 102, ''Sara'''
+from dual
 where not exists (
     select 1 from sql_definitions where sql_name = 'Get Sample Customers'
 );
@@ -48,6 +53,7 @@ select
     'Count Sample Orders',
     'Returns a sample order count',
     'select 42 as order_count'
+from dual
 where not exists (
     select 1 from sql_definitions where sql_name = 'Count Sample Orders'
 );

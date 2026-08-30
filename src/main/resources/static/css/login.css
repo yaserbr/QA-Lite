@@ -790,6 +790,10 @@ body {
     font-weight: 500;
 }
 
+.workflow-command-input-label.is-hidden {
+    display: none;
+}
+
 .workflow-command-block input {
     flex: 1 1 120px;
     min-width: 96px;
@@ -1017,6 +1021,49 @@ body {
     gap: 14px;
 }
 
+.access-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.access-search-icon {
+    position: absolute;
+    left: 12px;
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: #667472;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2.35;
+    pointer-events: none;
+}
+
+.access-search input {
+    width: 100%;
+    height: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.34);
+    border-radius: 6px;
+    padding: 0 12px 0 36px;
+    background: rgba(234, 242, 240, 0.88);
+    color: #172021;
+    font: inherit;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.access-search input::placeholder {
+    color: #667472;
+}
+
+.access-search input:focus {
+    border-color: rgba(255, 255, 255, 0.8);
+    background: rgba(248, 250, 249, 0.96);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.12);
+}
+
 .access-list {
     display: grid;
     gap: 12px;
@@ -1024,12 +1071,16 @@ body {
 
 .access-user {
     display: grid;
-    gap: 14px;
+    gap: 0;
     border: 1px solid rgba(255, 255, 255, 0.28);
     border-radius: 8px;
-    padding: 14px;
+    padding: 8px 14px;
     background: linear-gradient(180deg, rgba(234, 242, 240, 0.82), rgba(211, 225, 221, 0.68));
     color: #172021;
+}
+
+.access-user[hidden] {
+    display: none;
 }
 
 .access-user-header {
@@ -1037,30 +1088,75 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    padding: 4px 0;
 }
 
-.access-user-header strong,
-.access-user-header span {
+.access-user-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1 1 auto;
+    min-width: 0;
+    border: none;
+    background: none;
+    padding: 2px 0;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.access-toggle-icon {
+    flex: 0 0 auto;
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: #667472;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2.4;
+    transition: transform 160ms ease;
+}
+
+.access-user-toggle[aria-expanded="true"] .access-toggle-icon {
+    transform: rotate(90deg);
+}
+
+.access-user-identity {
+    display: block;
+    min-width: 0;
+}
+
+.access-user-identity strong,
+.access-user-identity span {
     display: block;
 }
 
-.access-user-header strong {
-    font-size: 18px;
+.access-user-identity strong {
+    overflow: hidden;
+    font-size: 14px;
     font-weight: 600;
-    line-height: 1.1;
+    line-height: 1.2;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
-.access-user-header span {
-    margin-top: 4px;
+.access-user-identity span {
+    margin-top: 2px;
     color: #667472;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
 }
 
 .permission-grid {
-    display: grid;
+    display: none;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+    margin: 4px 0 12px;
+}
+
+.access-user.is-expanded .permission-grid {
+    display: grid;
 }
 
 .permission-set {
@@ -1174,6 +1270,55 @@ body {
     white-space: pre-wrap;
     color: rgba(255, 255, 255, 0.86);
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.admin-row-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.admin-inline-form {
+    display: inline-flex;
+}
+
+.admin-test-button {
+    height: 30px;
+    padding: 0 12px;
+    border: 1px solid rgba(255, 255, 255, 0.34);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 160ms ease, border-color 160ms ease;
+}
+
+.admin-test-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.55);
+}
+
+.admin-delete-button {
+    height: 30px;
+    padding: 0 12px;
+    border: 1px solid rgba(224, 108, 98, 0.5);
+    border-radius: 6px;
+    background: rgba(224, 108, 98, 0.16);
+    color: #ffb3ac;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 160ms ease, border-color 160ms ease;
+}
+
+.admin-delete-button:hover {
+    background: rgba(224, 108, 98, 0.28);
+    border-color: rgba(224, 108, 98, 0.75);
 }
 
 .dashboard-page.is-leaving {

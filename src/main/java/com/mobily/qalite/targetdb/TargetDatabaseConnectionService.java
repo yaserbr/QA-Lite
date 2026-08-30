@@ -1,5 +1,8 @@
 package com.mobily.qalite.targetdb;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+
 import com.mobily.qalite.security.SecretCipherService;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -39,6 +42,22 @@ public class TargetDatabaseConnectionService {
         }, environmentId);
     }
 
+    /**
+     * Opens an isolated, short-lived connection pool for the environment and immediately validates
+     * and closes it. Independent of the app's own datasource and of any other environment's pool -
+     * used by the admin "Test Connection" action to confirm credentials/reachability without side effects.
+     */
+    public boolean testConnection(long environmentId) {
+        TargetDatabaseConnection connection = getEnvironmentConnection(environmentId);
+
+        try (HikariDataSource dataSource = createDataSource(connection);
+             Connection sqlConnection = dataSource.getConnection()) {
+            return sqlConnection.isValid(5);
+        } catch (SQLException | RuntimeException exception) {
+            return false;
+        }
+    }
+
     public HikariDataSource createDataSource(TargetDatabaseConnection connection) {
         HikariConfig config = new HikariConfig();
         config.setPoolName("qalite-target-" + connection.environmentId());
@@ -49,7 +68,6 @@ public class TargetDatabaseConnectionService {
         config.setMinimumIdle(0);
         config.setMaximumPoolSize(2);
         config.setConnectionTimeout(10_000);
-        config.setReadOnly(true);
 
         if (connection.databaseType().requiresDatabaseProperty()) {
             config.addDataSourceProperty(

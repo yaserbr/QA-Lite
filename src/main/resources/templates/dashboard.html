@@ -8,6 +8,8 @@
     <link rel="icon" type="image/webp" th:href="@{/images/MobilyLogo.svg.webp}">
     <link rel="preload" as="image" th:href="@{/images/login-visual.webp}">
     <link rel="stylesheet" th:href="@{/css/login.css}">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
     <script defer th:src="@{/js/page-transition.js}"></script>
 </head>
 
@@ -43,7 +45,7 @@
                 <p class="rail-empty" th:if="${#lists.isEmpty(environments)}">No environments allowed.</p>
                 <button type="button" class="env-container" th:each="environment, status : ${environments}"
                     th:classappend="${status.index == 0} ? ' is-active' : ''" th:data-env="${environment.name}"
-                    th:data-env-note="${environment.note}">
+                    th:data-env-id="${environment.envId}" th:data-env-note="${environment.note}">
                     <span class="env-label" th:text="${environment.name}">SIT</span>
                     <span class="env-note" th:text="${environment.note}">Integration</span>
                 </button>
@@ -55,7 +57,7 @@
                         <p class="section-heading">Build execution</p>
                     </div>
                     <button type="button" class="run-button workspace-run-button" id="run-command"
-                        disabled>Execute</button>
+                        th:data-execute-url="@{/execute}" disabled>Execute</button>
                 </div>
 
                 <div class="workflow-canvas" id="workflow-canvas">
@@ -76,7 +78,8 @@
                         th:data-command="${activeCommand.commandId}">
                         <span class="workflow-command-title" id="workflow-command-title"
                             th:text="${activeCommand.sqlName}">Get Customer Info</span>
-                        <label class="workflow-command-input-label">
+                        <label class="workflow-command-input-label"
+                            th:classappend="${activeCommand.fieldValue == null} ? ' is-hidden' : ''">
                             <span id="workflow-command-field-label" th:text="${activeCommand.fieldLabel}">Customer
                                 ID</span>
                             <input id="workflow-command-input" type="text" th:value="${activeCommand.fieldValue}"
@@ -96,8 +99,8 @@
                 <p class="rail-empty" th:if="${#lists.isEmpty(sqlCommands)}">No SQL commands allowed.</p>
                 <button type="button" class="command-block" th:each="command : ${sqlCommands}"
                     th:classappend="${command.tone}" draggable="true" th:data-command="${command.commandId}"
-                    th:data-title="${command.sqlName}" th:data-field-label="${command.fieldLabel}"
-                    th:data-field-value="${command.fieldValue}">
+                    th:data-sql-id="${command.sqlId}" th:data-title="${command.sqlName}"
+                    th:data-field-label="${command.fieldLabel}" th:data-field-value="${command.fieldValue}">
                     <span class="block-title" th:text="${command.sqlName}">Get Customer Info</span>
                 </button>
             </aside>

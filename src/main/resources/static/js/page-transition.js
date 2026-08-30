@@ -161,6 +161,7 @@ if (builderLayout) {
     const workflowCommandTitle = document.querySelector("#workflow-command-title");
     const workflowCommandFieldLabel = document.querySelector("#workflow-command-field-label");
     const workflowCommandInput = document.querySelector("#workflow-command-input");
+    const workflowCommandInputLabel = document.querySelector(".workflow-command-input-label");
     const runButton = document.querySelector("#run-command");
     const resultOutput = document.querySelector("#result-output");
 
@@ -170,6 +171,7 @@ if (builderLayout) {
 
     const getEnvironmentFromButton = (button) => ({
         id: button?.dataset.env || "",
+        envId: button?.dataset.envId || "",
         note: button?.dataset.envNote || ""
     });
 
@@ -196,9 +198,11 @@ if (builderLayout) {
 
     const getCommandFromBlock = (commandBlock) => ({
         id: commandBlock.dataset.command,
+        sqlId: commandBlock.dataset.sqlId,
         title: commandBlock.dataset.title,
         fieldLabel: commandBlock.dataset.fieldLabel,
         fieldValue: commandBlock.dataset.fieldValue,
+        hasInput: commandBlock.dataset.fieldValue !== undefined,
         tone: getCommandTone(commandBlock)
     });
 
@@ -374,9 +378,15 @@ if (builderLayout) {
         workflowCommandBlock.dataset.command = command.id;
         workflowCommandBlock.className = `workflow-command-block ${command.tone} is-disconnected`;
         workflowCommandTitle.textContent = command.title;
-        workflowCommandFieldLabel.textContent = command.fieldLabel;
-        workflowCommandInput.value = command.fieldValue;
-        workflowCommandInput.setAttribute("aria-label", command.fieldLabel);
+        workflowCommandInputLabel?.classList.toggle("is-hidden", !command.hasInput);
+
+        if (command.hasInput) {
+            workflowCommandFieldLabel.textContent = command.fieldLabel;
+            workflowCommandInput.value = command.fieldValue;
+            workflowCommandInput.setAttribute("aria-label", command.fieldLabel);
+        } else {
+            workflowCommandInput.value = "";
+        }
 
         if (autoConnect) {
             snapCommand();
@@ -392,40 +402,32 @@ if (builderLayout) {
                 <tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr>
             </thead>
             <tbody>
-                ${rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}
+                ${rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell ?? "")}</td>`).join("")}</tr>`).join("")}
             </tbody>
         </table>
     `;
 
-    const buildResult = (command, value) => {
-        const commandName = command.title.toLowerCase();
+    const getCsrfHeaders = () => {
+        const tokenMeta = document.querySelector('meta[name="_csrf"]');
+        const headerMeta = document.querySelector('meta[name="_csrf_header"]');
 
-        if (commandName.includes("customer")) {
-            return buildTable(
-                    ["customer_id", "customer_name", "status", "environment"],
-                    [[value || "101", "Ahmed", "Active", connectionState.environmentId]]
-            );
+        if (!tokenMeta || !headerMeta) {
+            return {};
         }
 
-        if (commandName.includes("order")) {
-            return buildTable(
-                    ["order_status", "order_count", "environment"],
-                    [[value || "ALL", connectionState.environmentId === "SIT" ? "42" : "39", connectionState.environmentId]]
-            );
-        }
-
-        if (commandName.includes("history") || commandName.includes("user")) {
-            return buildTable(
-                    ["username", "last_command", "status", "environment"],
-                    [[value || "qa_user", command.title, "SUCCESS", connectionState.environmentId]]
-            );
-        }
-
-        return buildTable(
-                ["input", "command", "status", "environment"],
-                [[value || "-", command.title, "SUCCESS", connectionState.environmentId]]
-        );
+        return { [headerMeta.content]: tokenMeta.content };
     };
+
+    const executeCommand = async (environmentId, sqlId) => fetch(runButton.dataset.executeUrl, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+            "Content-Type": "application/json",
+            ...ASYNC_HEADERS,
+            ...getCsrfHeaders()
+        },
+        body: JSON.stringify({ environmentId: Number(environmentId), sqlId: Number(sqlId) })
+    });
 
     envButtons.forEach((button) => {
         button.addEventListener("click", () => {
@@ -538,21 +540,70 @@ if (builderLayout) {
         setConnectionFeedback(false);
     });
 
-    runButton?.addEventListener("click", () => {
-        if (!activeCommand || connectionState.connectionStatus !== "connected" || !resultOutput) {
+    runButton?.addEventListener("click", async () => {
+        if (!activeCommand || !activeEnvironment || connectionState.connectionStatus !== "connected" || !resultOutput) {
             return;
         }
 
-        const inputValue = workflowCommandInput?.value.trim() || activeCommand.fieldValue;
+        if (!activeEnvironment.envId || !activeCommand.sqlId) {
+            return;
+        }
 
+        runButton.disabled = true;
         resultOutput.classList.remove("is-empty");
-        resultOutput.innerHTML = `
-            <div class="result-status">
-                <span>SUCCESS</span>
-                <span>${escapeHtml(connectionState.environmentId)}</span>
-            </div>
-            ${buildResult(activeCommand, inputValue)}
-        `;
+        resultOutput.textContent = "Running...";
+
+        try {
+            const response = await executeCommand(activeEnvironment.envId, activeCommand.sqlId);
+            const payload = await response.json();
+
+            if (!response.ok) {
+                resultOutput.innerHTML = `
+                    <div class="result-status">
+                        <span>ERROR</span>
+                    </div>
+                    <p>${escapeHtml(payload.message || "The request could not be completed.")}</p>
+                `;
+                return;
+            }
+
+            if (!payload.success) {
+                resultOutput.innerHTML = `
+                    <div class="result-status">
+                        <span>FAILED</span>
+                        <span>${escapeHtml(payload.environmentName ?? "")}</span>
+                    </div>
+                    <p>${escapeHtml(payload.errorMessage || "The command failed.")}</p>
+                `;
+                return;
+            }
+
+            let resultBody;
+            if (payload.rowsAffected !== null && payload.rowsAffected !== undefined) {
+                resultBody = `<p>${payload.rowsAffected} row(s) affected.</p>`;
+            } else if (payload.rows.length === 0) {
+                resultBody = "<p>The query ran successfully and returned no rows.</p>";
+            } else {
+                resultBody = buildTable(payload.columns, payload.rows);
+            }
+
+            resultOutput.innerHTML = `
+                <div class="result-status">
+                    <span>SUCCESS</span>
+                    <span>${escapeHtml(payload.environmentName ?? "")}</span>
+                </div>
+                ${resultBody}
+            `;
+        } catch (error) {
+            resultOutput.innerHTML = `
+                <div class="result-status">
+                    <span>ERROR</span>
+                </div>
+                <p>Could not reach the server. Please try again.</p>
+            `;
+        } finally {
+            runButton.disabled = connectionState.connectionStatus !== "connected";
+        }
     });
 
     window.addEventListener("resize", () => {

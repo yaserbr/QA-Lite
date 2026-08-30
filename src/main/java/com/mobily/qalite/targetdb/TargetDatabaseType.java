@@ -19,6 +19,12 @@ public enum TargetDatabaseType {
             "jdbc:oracle:",
             "jdbc:oracle:thin:@//host:1521/serviceName"
     ),
+    MYSQL(
+            "MySQL",
+            "com.mysql.cj.jdbc.Driver",
+            "jdbc:mysql:",
+            "jdbc:mysql://host:3306/database"
+    ),
     MONGODB_ATLAS_SQL(
             "MongoDB Atlas SQL",
             "com.mongodb.jdbc.MongoDriver",

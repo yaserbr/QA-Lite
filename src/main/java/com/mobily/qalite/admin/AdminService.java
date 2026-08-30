@@ -25,8 +25,6 @@ public class AdminService {
     private static final int MAX_SQL_DESCRIPTION_LENGTH = 1000;
     private static final int MAX_SQL_TEXT_LENGTH = 20_000;
     private static final int MAX_PERMISSION_IDS = 500;
-    private static final String WRITE_SQL_KEYWORDS =
-            "\\b(insert|update|delete|drop|alter|truncate|merge|call|exec|execute|grant|revoke|create)\\b";
 
     private final JdbcTemplate jdbcTemplate;
     private final SecretCipherService secretCipherService;
@@ -74,7 +72,6 @@ public class AdminService {
     @Transactional
     public void createSqlDefinition(String sqlName, String sqlDescription, String sqlText) {
         String normalizedSqlText = required(sqlText, "SQL text", MAX_SQL_TEXT_LENGTH);
-        validateReadOnlySql(normalizedSqlText);
 
         jdbcTemplate.update("""
                 insert into sql_definitions (sql_name, sql_description, sql_text)
@@ -84,6 +81,26 @@ public class AdminService {
                 optional(sqlDescription, MAX_SQL_DESCRIPTION_LENGTH),
                 normalizedSqlText
         );
+    }
+
+    @Transactional
+    public void deleteEnvironment(long envId) {
+        jdbcTemplate.update("delete from execution_history where env_id = ?", envId);
+
+        int deletedRows = jdbcTemplate.update("delete from environments where env_id = ?", envId);
+        if (deletedRows == 0) {
+            throw new IllegalArgumentException("Environment does not exist");
+        }
+    }
+
+    @Transactional
+    public void deleteSqlDefinition(long sqlId) {
+        jdbcTemplate.update("delete from execution_history where sql_id = ?", sqlId);
+
+        int deletedRows = jdbcTemplate.update("delete from sql_definitions where sql_id = ?", sqlId);
+        if (deletedRows == 0) {
+            throw new IllegalArgumentException("SQL command does not exist");
+        }
     }
 
     @Transactional
@@ -208,17 +225,6 @@ public class AdminService {
     private static void validatePermissionIdCount(List<Long> ids, String fieldName) {
         if (ids != null && ids.size() > MAX_PERMISSION_IDS) {
             throw new IllegalArgumentException(fieldName + " exceeded the allowed limit");
-        }
-    }
-
-    private static void validateReadOnlySql(String sqlText) {
-        String normalizedSql = sqlText.trim().toLowerCase();
-
-        if (!(normalizedSql.startsWith("select ") || normalizedSql.startsWith("with "))) {
-            throw new IllegalArgumentException("Only read-only SELECT SQL commands are allowed");
-        }
-        if (normalizedSql.contains(";") || normalizedSql.matches("(?s).*" + WRITE_SQL_KEYWORDS + ".*")) {
-            throw new IllegalArgumentException("SQL command contains a blocked keyword");
         }
     }
 

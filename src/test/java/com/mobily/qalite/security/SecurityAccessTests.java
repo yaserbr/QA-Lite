@@ -8,6 +8,7 @@ import com.mobily.qalite.controller.AdminController;
 import com.mobily.qalite.controller.PageController;
 import com.mobily.qalite.controller.RegistrationController;
 import com.mobily.qalite.dashboard.DashboardService;
+import com.mobily.qalite.targetdb.TargetDatabaseConnectionService;
 import com.mobily.qalite.targetdb.TargetDatabaseType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,6 +66,9 @@ class SecurityAccessTests {
 
     @MockitoBean
     private RegistrationService registrationService;
+
+    @MockitoBean
+    private TargetDatabaseConnectionService targetDatabaseConnectionService;
 
     @BeforeEach
     void setUp() {

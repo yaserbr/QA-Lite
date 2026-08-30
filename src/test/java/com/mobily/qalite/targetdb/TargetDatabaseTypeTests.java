@@ -8,6 +8,19 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class TargetDatabaseTypeTests {
 
     @Test
+    void mysqlJdbcUrlIsAccepted() {
+        TargetDatabaseType.MYSQL.validateJdbcUrl("jdbc:mysql://host:3306/database");
+    }
+
+    @Test
+    void mysqlRejectsUrlFromAnotherDatabaseType() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> TargetDatabaseType.MYSQL.validateJdbcUrl("jdbc:postgresql://host:5432/database")
+        );
+    }
+
+    @Test
     void mongodbAtlasSqlJdbcUrlMustIncludeDatabaseName() {
         assertThrows(
                 IllegalArgumentException.class,

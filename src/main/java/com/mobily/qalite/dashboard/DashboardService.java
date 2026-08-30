@@ -45,8 +45,8 @@ public class DashboardService {
         return jdbcTemplate.query("""
                 select e.env_id, e.name, e.description, e.db_type
                 from environments e
-                join user_allowed_env access on access.env_id = e.env_id
-                join users u on u.user_id = access.user_id
+                join user_allowed_env ua on ua.env_id = e.env_id
+                join users u on u.user_id = ua.user_id
                 where u.username = ?
                 order by e.name
                 """, (resultSet, rowNumber) -> new DashboardEnvironment(
@@ -73,8 +73,8 @@ public class DashboardService {
         return jdbcTemplate.query("""
                 select s.sql_id, s.sql_name, s.sql_description
                 from sql_definitions s
-                join user_allowed_sql access on access.sql_id = s.sql_id
-                join users u on u.user_id = access.user_id
+                join user_allowed_sql ua on ua.sql_id = s.sql_id
+                join users u on u.user_id = ua.user_id
                 where u.username = ?
                 order by s.sql_name
                 """, (resultSet, rowNumber) -> mapSqlCommand(
@@ -115,7 +115,7 @@ public class DashboardService {
         if (normalizedName.contains("history") || normalizedName.contains("user")) {
             return "Username";
         }
-        return "Input";
+        return null;
     }
 
     private static String fieldValue(String sqlName) {
@@ -130,7 +130,7 @@ public class DashboardService {
         if (normalizedName.contains("history") || normalizedName.contains("user")) {
             return "qa_user";
         }
-        return "";
+        return null;
     }
 
     public record DashboardView(

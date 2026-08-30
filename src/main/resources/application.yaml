@@ -6,10 +6,10 @@ spring:
     name: qa-lite
 
   datasource:
-    url: ${QALITE_DB_URL:jdbc:postgresql://localhost:5432/qalite}
+    url: ${QALITE_DB_URL:jdbc:oracle:thin:@//localhost:1521/XEPDB1}
     username: ${QALITE_DB_USERNAME:qalite}
     password: ${QALITE_DB_PASSWORD:qalite}
-    driver-class-name: org.postgresql.Driver
+    driver-class-name: oracle.jdbc.OracleDriver
     hikari:
       maximum-pool-size: ${QALITE_DB_POOL_SIZE:10}
       minimum-idle: 2

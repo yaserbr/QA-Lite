@@ -1,51 +1,22 @@
-# QA Lite PostgreSQL Setup
+# Configuring A PostgreSQL Target Environment
 
-Use PostgreSQL as the QA Lite application database. This database stores users,
-environments, SQL definitions, SQL permissions, and execution history.
+QA Lite's own data lives in Oracle (see [oracle-setup.md](oracle-setup.md)).
+PostgreSQL is one of the database types QA Lite can query *as a target
+environment* — a QA/SIT/UAT database that admins connect through the Admin
+page so testers can run predefined read-only SQL commands against it.
 
-## 1. Create The Tables
+## Add A PostgreSQL Environment
 
-Flyway creates the tables automatically when the application starts. The first
-migration is:
+1. Sign in as an `ADMIN` user and open `/QaLite/admin`.
+2. Under **Environments**, fill in:
+   - **Name** — a short label such as `SIT` or `UAT`
+   - **Database Type** — `PostgreSQL`
+   - **JDBC URL** — e.g. `jdbc:postgresql://host:5432/database` (do not put
+     credentials in the URL)
+   - **Username** / **Password** — a read-only account on that PostgreSQL
+     database
+3. Save. The password is encrypted (AES/GCM) before being stored, using the
+   app's `QALITE_SECRET_KEY`.
 
-```text
-src/main/resources/db/migration/V1__init_schema.sql
-```
-
-The current minimal schema creates:
-
-```text
-users
-environments
-sql_definitions
-user_allowed_sql
-user_allowed_env
-execution_history
-```
-
-## 2. Configure The Application
-
-Edit the `.env` file in the project root:
-
-```text
-QALITE_DB_URL=jdbc:postgresql://HOST:PORT/DATABASE?sslmode=require
-QALITE_DB_USERNAME=USERNAME
-QALITE_DB_PASSWORD=PASSWORD
-QALITE_DB_POOL_SIZE=10
-```
-
-Use the exact host, port, database name, username, and password from your cloud
-PostgreSQL provider. The `.env` file is ignored by Git because it contains
-secrets.
-
-## 3. Run
-
-```powershell
-.\mvnw.cmd spring-boot:run
-```
-
-The app context path is:
-
-```text
-/QaLite
-```
+The connection QA Lite opens to this environment is read-only and pooled
+separately per environment (see `TargetDatabaseConnectionService`).

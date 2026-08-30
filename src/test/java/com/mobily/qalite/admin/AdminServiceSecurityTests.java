@@ -37,14 +37,10 @@ class AdminServiceSecurityTests {
     }
 
     @Test
-    void destructiveSqlDefinitionIsRejectedBeforeDatabaseWrite() {
-        assertThrows(IllegalArgumentException.class, () -> adminService.createSqlDefinition(
-                "Delete Users",
-                "Bad SQL",
-                "delete from users"
-        ));
+    void destructiveSqlDefinitionIsAccepted() {
+        adminService.createSqlDefinition("Cleanup Stale Rows", "Admin-authored write", "delete from stale_rows");
 
-        verify(jdbcTemplate, never()).update(anyString(), anyString(), anyString(), anyString());
+        verify(jdbcTemplate).update(anyString(), eq("Cleanup Stale Rows"), eq("Admin-authored write"), eq("delete from stale_rows"));
     }
 
     @Test

@@ -103,17 +103,33 @@
                 <p class="admin-note">Admin users automatically have full access. Only standard users need explicit
                     Environment and SQL permissions.</p>
 
-                <div class="access-list">
+                <div class="access-search" th:if="${not #lists.isEmpty(users)}">
+                    <svg class="access-search-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="11" cy="11" r="7"></circle>
+                        <path d="M21 21l-4.3-4.3"></path>
+                    </svg>
+                    <input type="search" id="user-search" placeholder="Search username" autocomplete="off"
+                        aria-label="Search users by username">
+                </div>
+
+                <div class="access-list" id="access-list">
                     <p class="admin-empty" th:if="${#lists.isEmpty(users)}">No standard users yet.</p>
+                    <p class="admin-empty" id="access-search-empty" hidden>No users match your search.</p>
                     <form class="access-user" th:each="user : ${users}"
+                        th:attr="data-username=${#strings.toLowerCase(user.username)}"
                         th:action="@{/admin/users/{userId}/permissions(userId=${user.userId})}" method="post">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
                         <div class="access-user-header">
-                            <div>
-                                <strong th:text="${user.username}">qa_user</strong>
-                                <span th:text="${user.role}">QA_USER</span>
-                            </div>
+                            <button type="button" class="access-user-toggle" aria-expanded="false">
+                                <svg class="access-toggle-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M9 6l6 6-6 6"></path>
+                                </svg>
+                                <span class="access-user-identity">
+                                    <strong th:text="${user.username}">qa_user</strong>
+                                    <span th:text="${user.role}">QA_USER</span>
+                                </span>
+                            </button>
                             <button type="submit" class="admin-submit compact">Save Access</button>
                         </div>
 
@@ -160,6 +176,7 @@
                                     <th>Name</th>
                                     <th>Type</th>
                                     <th>Username</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -171,9 +188,26 @@
                                     </td>
                                     <td th:text="${environment.dbType}">POSTGRESQL</td>
                                     <td th:text="${environment.dbUsername}">qa_readonly</td>
+                                    <td>
+                                        <div class="admin-row-actions">
+                                            <form class="admin-inline-form"
+                                                th:action="@{/admin/environments/{envId}/test(envId=${environment.envId})}"
+                                                method="post">
+                                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                                <button type="submit" class="admin-test-button">Test</button>
+                                            </form>
+                                            <form class="admin-inline-form js-confirm-delete"
+                                                th:action="@{/admin/environments/{envId}/delete(envId=${environment.envId})}"
+                                                method="post"
+                                                data-confirm-message="Delete this environment? Its execution history will be deleted too. This cannot be undone.">
+                                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                                <button type="submit" class="admin-delete-button">Delete</button>
+                                            </form>
+                                        </div>
+                                    </td>
                                 </tr>
                                 <tr th:if="${#lists.isEmpty(environments)}">
-                                    <td colspan="3">No environments yet.</td>
+                                    <td colspan="4">No environments yet.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -188,6 +222,7 @@
                                 <tr>
                                     <th>Name</th>
                                     <th>SQL</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -198,9 +233,18 @@
                                             th:text="${#strings.isEmpty(sql.sqlDescription) ? 'No description' : sql.sqlDescription}">Description</span>
                                     </td>
                                     <td><code th:text="${sql.sqlText}">select 1</code></td>
+                                    <td>
+                                        <form class="admin-inline-form js-confirm-delete"
+                                            th:action="@{/admin/sql/{sqlId}/delete(sqlId=${sql.sqlId})}"
+                                            method="post"
+                                            data-confirm-message="Delete this SQL command? Its execution history will be deleted too. This cannot be undone.">
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <button type="submit" class="admin-delete-button">Delete</button>
+                                        </form>
+                                    </td>
                                 </tr>
                                 <tr th:if="${#lists.isEmpty(sqlDefinitions)}">
-                                    <td colspan="2">No SQL commands yet.</td>
+                                    <td colspan="3">No SQL commands yet.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -209,6 +253,7 @@
             </section>
         </section>
     </main>
+    <script th:src="@{/js/admin.js}" defer></script>
 </body>
 
 </html>
