@@ -78,13 +78,12 @@
                         th:data-command="${activeCommand.commandId}">
                         <span class="workflow-command-title" id="workflow-command-title"
                             th:text="${activeCommand.sqlName}">Get Customer Info</span>
-                        <label class="workflow-command-input-label"
-                            th:classappend="${activeCommand.fieldValue == null} ? ' is-hidden' : ''">
-                            <span id="workflow-command-field-label" th:text="${activeCommand.fieldLabel}">Customer
-                                ID</span>
-                            <input id="workflow-command-input" type="text" th:value="${activeCommand.fieldValue}"
-                                th:attr="aria-label=${activeCommand.fieldLabel}">
-                        </label>
+                        <div id="workflow-command-params" class="workflow-command-params">
+                            <label class="workflow-command-input-label" th:each="paramName : ${activeCommand.parameterNames}">
+                                <span th:text="${paramName}">param</span>
+                                <input type="text" th:attr="data-param-name=${paramName},aria-label=${paramName}">
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -100,7 +99,7 @@
                 <button type="button" class="command-block" th:each="command : ${sqlCommands}"
                     th:classappend="${command.tone}" draggable="true" th:data-command="${command.commandId}"
                     th:data-sql-id="${command.sqlId}" th:data-title="${command.sqlName}"
-                    th:data-field-label="${command.fieldLabel}" th:data-field-value="${command.fieldValue}">
+                    th:data-params="${command.parameterNamesJson()}">
                     <span class="block-title" th:text="${command.sqlName}">Get Customer Info</span>
                 </button>
             </aside>

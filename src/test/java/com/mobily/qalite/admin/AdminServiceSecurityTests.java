@@ -37,6 +37,67 @@ class AdminServiceSecurityTests {
     }
 
     @Test
+    void adminCannotDeleteTheirOwnAccount() {
+        when(jdbcTemplate.queryForList("select username from users where user_id = ?", String.class, 1L))
+                .thenReturn(List.of("admin"));
+
+        assertThrows(IllegalArgumentException.class, () -> adminService.deleteUser(1L, "admin"));
+
+        verify(jdbcTemplate, never()).update("delete from users where user_id = ?", 1L);
+    }
+
+    @Test
+    void lastRemainingAdminCannotBeDeleted() {
+        when(jdbcTemplate.queryForList("select username from users where user_id = ?", String.class, 2L))
+                .thenReturn(List.of("second_admin"));
+        when(jdbcTemplate.queryForList("select role from users where user_id = ?", String.class, 2L))
+                .thenReturn(List.of("ADMIN"));
+        when(jdbcTemplate.queryForObject("select count(*) from users where role = 'ADMIN'", Integer.class))
+                .thenReturn(1);
+
+        assertThrows(IllegalArgumentException.class, () -> adminService.deleteUser(2L, "admin"));
+
+        verify(jdbcTemplate, never()).update("delete from users where user_id = ?", 2L);
+    }
+
+    @Test
+    void anotherAdminCanBeDeletedWhenMoreThanOneAdminExists() {
+        when(jdbcTemplate.queryForList("select username from users where user_id = ?", String.class, 2L))
+                .thenReturn(List.of("second_admin"));
+        when(jdbcTemplate.queryForList("select role from users where user_id = ?", String.class, 2L))
+                .thenReturn(List.of("ADMIN"));
+        when(jdbcTemplate.queryForObject("select count(*) from users where role = 'ADMIN'", Integer.class))
+                .thenReturn(2);
+
+        adminService.deleteUser(2L, "admin");
+
+        verify(jdbcTemplate).update("delete from execution_history where user_id = ?", 2L);
+        verify(jdbcTemplate).update("delete from users where user_id = ?", 2L);
+    }
+
+    @Test
+    void ordinaryUserCanBeDeletedByAdmin() {
+        when(jdbcTemplate.queryForList("select username from users where user_id = ?", String.class, 3L))
+                .thenReturn(List.of("qa_user"));
+        when(jdbcTemplate.queryForList("select role from users where user_id = ?", String.class, 3L))
+                .thenReturn(List.of("QA_USER"));
+
+        adminService.deleteUser(3L, "admin");
+
+        verify(jdbcTemplate).update("delete from execution_history where user_id = ?", 3L);
+        verify(jdbcTemplate).update("delete from users where user_id = ?", 3L);
+        verify(jdbcTemplate, never()).queryForObject("select count(*) from users where role = 'ADMIN'", Integer.class);
+    }
+
+    @Test
+    void deletingANonExistentUserFails() {
+        when(jdbcTemplate.queryForList("select username from users where user_id = ?", String.class, 99L))
+                .thenReturn(List.of());
+
+        assertThrows(IllegalArgumentException.class, () -> adminService.deleteUser(99L, "admin"));
+    }
+
+    @Test
     void destructiveSqlDefinitionIsAccepted() {
         adminService.createSqlDefinition("Cleanup Stale Rows", "Admin-authored write", "delete from stale_rows");
 

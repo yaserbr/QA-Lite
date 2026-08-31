@@ -7,6 +7,7 @@ import com.mobily.qalite.targetdb.TargetDatabaseConnectionService;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,13 +30,15 @@ public class AdminController {
     }
 
     @GetMapping
-    String admin(Model model) {
+    String admin(Model model, Authentication authentication) {
         AdminService.AdminView view = adminService.getAdminView();
 
         model.addAttribute("users", view.users());
+        model.addAttribute("allUsers", view.allUsers());
         model.addAttribute("environments", view.environments());
         model.addAttribute("sqlDefinitions", view.sqlDefinitions());
         model.addAttribute("databaseTypes", view.databaseTypes());
+        model.addAttribute("currentUsername", authentication.getName());
 
         return "admin";
     }
@@ -102,6 +105,15 @@ public class AdminController {
         }
 
         return "redirect:/admin";
+    }
+
+    @PostMapping("/users/{userId}/delete")
+    String deleteUser(@PathVariable long userId, Authentication authentication, RedirectAttributes redirectAttributes) {
+        return runAdminAction(
+                () -> adminService.deleteUser(userId, authentication.getName()),
+                "User deleted.",
+                redirectAttributes
+        );
     }
 
     @PostMapping("/users/{userId}/permissions")

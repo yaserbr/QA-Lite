@@ -159,9 +159,7 @@ if (builderLayout) {
     const workflowEnvNote = document.querySelector("#workflow-env-note");
     const workflowCommandBlock = document.querySelector("#workflow-command-block");
     const workflowCommandTitle = document.querySelector("#workflow-command-title");
-    const workflowCommandFieldLabel = document.querySelector("#workflow-command-field-label");
-    const workflowCommandInput = document.querySelector("#workflow-command-input");
-    const workflowCommandInputLabel = document.querySelector(".workflow-command-input-label");
+    const workflowCommandParams = document.querySelector("#workflow-command-params");
     const runButton = document.querySelector("#run-command");
     const resultOutput = document.querySelector("#result-output");
 
@@ -196,13 +194,20 @@ if (builderLayout) {
     const getCommandTone = (commandBlock) => Array.from(commandBlock.classList)
             .find((className) => className.startsWith("is-")) || "is-blue";
 
+    const parseParamNames = (raw) => {
+        try {
+            const parsed = JSON.parse(raw || "[]");
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+            return [];
+        }
+    };
+
     const getCommandFromBlock = (commandBlock) => ({
         id: commandBlock.dataset.command,
         sqlId: commandBlock.dataset.sqlId,
         title: commandBlock.dataset.title,
-        fieldLabel: commandBlock.dataset.fieldLabel,
-        fieldValue: commandBlock.dataset.fieldValue,
-        hasInput: commandBlock.dataset.fieldValue !== undefined,
+        parameterNames: parseParamNames(commandBlock.dataset.params),
         tone: getCommandTone(commandBlock)
     });
 
@@ -378,14 +383,14 @@ if (builderLayout) {
         workflowCommandBlock.dataset.command = command.id;
         workflowCommandBlock.className = `workflow-command-block ${command.tone} is-disconnected`;
         workflowCommandTitle.textContent = command.title;
-        workflowCommandInputLabel?.classList.toggle("is-hidden", !command.hasInput);
 
-        if (command.hasInput) {
-            workflowCommandFieldLabel.textContent = command.fieldLabel;
-            workflowCommandInput.value = command.fieldValue;
-            workflowCommandInput.setAttribute("aria-label", command.fieldLabel);
-        } else {
-            workflowCommandInput.value = "";
+        if (workflowCommandParams) {
+            workflowCommandParams.innerHTML = command.parameterNames.map((paramName) => `
+                <label class="workflow-command-input-label">
+                    <span>${escapeHtml(paramName)}</span>
+                    <input type="text" data-param-name="${escapeHtml(paramName)}" aria-label="${escapeHtml(paramName)}">
+                </label>
+            `).join("");
         }
 
         if (autoConnect) {
@@ -418,7 +423,15 @@ if (builderLayout) {
         return { [headerMeta.content]: tokenMeta.content };
     };
 
-    const executeCommand = async (environmentId, sqlId) => fetch(runButton.dataset.executeUrl, {
+    const collectParameterValues = () => {
+        const values = {};
+        workflowCommandParams?.querySelectorAll("[data-param-name]").forEach((input) => {
+            values[input.dataset.paramName] = input.value;
+        });
+        return values;
+    };
+
+    const executeCommand = async (environmentId, sqlId, parameters) => fetch(runButton.dataset.executeUrl, {
         method: "POST",
         credentials: "same-origin",
         headers: {
@@ -426,7 +439,7 @@ if (builderLayout) {
             ...ASYNC_HEADERS,
             ...getCsrfHeaders()
         },
-        body: JSON.stringify({ environmentId: Number(environmentId), sqlId: Number(sqlId) })
+        body: JSON.stringify({ environmentId: Number(environmentId), sqlId: Number(sqlId), parameters })
     });
 
     envButtons.forEach((button) => {
@@ -554,7 +567,7 @@ if (builderLayout) {
         resultOutput.textContent = "Running...";
 
         try {
-            const response = await executeCommand(activeEnvironment.envId, activeCommand.sqlId);
+            const response = await executeCommand(activeEnvironment.envId, activeCommand.sqlId, collectParameterValues());
             const payload = await response.json();
 
             if (!response.ok) {

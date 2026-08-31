@@ -90,7 +90,10 @@
 
                         <label for="sql-text">SQL Text</label>
                         <textarea id="sql-text" name="sqlText" spellcheck="false"
-                            placeholder="select customer_id, customer_name from customers where customer_id = ?" required></textarea>
+                            placeholder="select customer_id, customer_name from customers where customer_name = :customer_name"
+                            required></textarea>
+                        <p class="field-help">Use <code>:name</code> for a value the user fills in before running
+                            (e.g. <code>:customer_name</code>) - it becomes an input box on the dashboard.</p>
 
                         <button type="submit" class="admin-submit">Add SQL</button>
                     </form>
@@ -245,6 +248,41 @@
                                 </tr>
                                 <tr th:if="${#lists.isEmpty(sqlDefinitions)}">
                                     <td colspan="3">No SQL commands yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+
+                <article class="admin-panel">
+                    <p class="section-heading">Current Users</p>
+                    <div class="admin-table-wrap">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Role</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="account : ${allUsers}">
+                                    <td th:text="${account.username}">qa_user</td>
+                                    <td th:text="${account.role}">QA_USER</td>
+                                    <td>
+                                        <form th:if="${account.username != currentUsername}"
+                                            class="admin-inline-form js-confirm-delete"
+                                            th:action="@{/admin/users/{userId}/delete(userId=${account.userId})}"
+                                            method="post"
+                                            data-confirm-message="Delete this user? Their access and execution history will be deleted too. This cannot be undone.">
+                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                            <button type="submit" class="admin-delete-button">Delete</button>
+                                        </form>
+                                        <span th:if="${account.username == currentUsername}" class="admin-note">You</span>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(allUsers)}">
+                                    <td colspan="3">No users yet.</td>
                                 </tr>
                             </tbody>
                         </table>

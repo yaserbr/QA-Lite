@@ -780,6 +780,10 @@ body {
     font-size: 17px;
 }
 
+.workflow-command-params {
+    display: contents;
+}
+
 .workflow-command-input-label {
     display: flex;
     flex: 1 1 180px;

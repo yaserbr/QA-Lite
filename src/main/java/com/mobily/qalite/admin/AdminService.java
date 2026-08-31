@@ -38,8 +38,9 @@ public class AdminService {
         List<AdminEnvironment> environments = loadEnvironments();
         List<AdminSqlDefinition> sqlDefinitions = loadSqlDefinitions();
         List<AdminUser> users = loadUsers();
+        List<AdminUserSummary> allUsers = loadAllUsers();
 
-        return new AdminView(users, environments, sqlDefinitions, TargetDatabaseType.supportedTypes());
+        return new AdminView(users, allUsers, environments, sqlDefinitions, TargetDatabaseType.supportedTypes());
     }
 
     @Transactional
@@ -103,6 +104,33 @@ public class AdminService {
         }
     }
 
+    /**
+     * Deletes any user account, including other admins - guarded so an admin can't delete their own
+     * account (avoids a stray click locking them out) or the last remaining admin (avoids locking
+     * everyone out of /admin with no way back in short of a direct database change).
+     */
+    @Transactional
+    public void deleteUser(long userId, String actingUsername) {
+        String username = jdbcTemplate.queryForList("select username from users where user_id = ?", String.class, userId)
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("User does not exist"));
+
+        if (username.equals(actingUsername)) {
+            throw new IllegalArgumentException("You cannot delete your own account");
+        }
+
+        if ("ADMIN".equals(getUserRole(userId))) {
+            Integer adminCount = jdbcTemplate.queryForObject("select count(*) from users where role = 'ADMIN'", Integer.class);
+            if (adminCount == null || adminCount <= 1) {
+                throw new IllegalArgumentException("Cannot delete the last remaining admin account");
+            }
+        }
+
+        jdbcTemplate.update("delete from execution_history where user_id = ?", userId);
+        jdbcTemplate.update("delete from users where user_id = ?", userId);
+    }
+
     @Transactional
     public void updateUserPermissions(long userId, List<Long> environmentIds, List<Long> sqlIds) {
         String role = getUserRole(userId);
@@ -148,6 +176,18 @@ public class AdminService {
                     allowedSqlIds.getOrDefault(userId, Set.of())
             );
         });
+    }
+
+    private List<AdminUserSummary> loadAllUsers() {
+        return jdbcTemplate.query("""
+                select user_id, username, role
+                from users
+                order by role, username
+                """, (resultSet, rowNumber) -> new AdminUserSummary(
+                resultSet.getLong("user_id"),
+                resultSet.getString("username"),
+                resultSet.getString("role")
+        ));
     }
 
     private List<AdminEnvironment> loadEnvironments() {
@@ -270,6 +310,7 @@ public class AdminService {
 
     public record AdminView(
             List<AdminUser> users,
+            List<AdminUserSummary> allUsers,
             List<AdminEnvironment> environments,
             List<AdminSqlDefinition> sqlDefinitions,
             List<TargetDatabaseType> databaseTypes
@@ -282,6 +323,13 @@ public class AdminService {
             String role,
             Set<Long> environmentIds,
             Set<Long> sqlIds
+    ) {
+    }
+
+    public record AdminUserSummary(
+            long userId,
+            String username,
+            String role
     ) {
     }
 

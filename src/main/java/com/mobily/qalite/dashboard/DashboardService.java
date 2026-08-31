@@ -1,7 +1,9 @@
 package com.mobily.qalite.dashboard;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
+import com.mobily.qalite.execution.SqlParameterParser;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -58,20 +60,21 @@ public class DashboardService {
 
     private List<DashboardSqlCommand> loadAllSqlCommands() {
         return jdbcTemplate.query("""
-                select sql_id, sql_name, sql_description
+                select sql_id, sql_name, sql_description, sql_text
                 from sql_definitions
                 order by sql_name
                 """, (resultSet, rowNumber) -> mapSqlCommand(
                 resultSet.getLong("sql_id"),
                 resultSet.getString("sql_name"),
                 resultSet.getString("sql_description"),
+                resultSet.getString("sql_text"),
                 rowNumber
         ));
     }
 
     private List<DashboardSqlCommand> loadAllowedSqlCommands(String username) {
         return jdbcTemplate.query("""
-                select s.sql_id, s.sql_name, s.sql_description
+                select s.sql_id, s.sql_name, s.sql_description, s.sql_text
                 from sql_definitions s
                 join user_allowed_sql ua on ua.sql_id = s.sql_id
                 join users u on u.user_id = ua.user_id
@@ -81,18 +84,24 @@ public class DashboardService {
                 resultSet.getLong("sql_id"),
                 resultSet.getString("sql_name"),
                 resultSet.getString("sql_description"),
+                resultSet.getString("sql_text"),
                 rowNumber
         ), username);
     }
 
-    private static DashboardSqlCommand mapSqlCommand(long sqlId, String sqlName, String sqlDescription, int rowNumber) {
+    private static DashboardSqlCommand mapSqlCommand(
+            long sqlId,
+            String sqlName,
+            String sqlDescription,
+            String sqlText,
+            int rowNumber
+    ) {
         return new DashboardSqlCommand(
                 sqlId,
                 sqlName,
                 sqlDescription,
                 TONES.get(rowNumber % TONES.size()),
-                fieldLabel(sqlName),
-                fieldValue(sqlName)
+                List.copyOf(SqlParameterParser.extractParameterNames(sqlText))
         );
     }
 
@@ -101,36 +110,6 @@ public class DashboardService {
             return description.trim();
         }
         return dbType;
-    }
-
-    private static String fieldLabel(String sqlName) {
-        String normalizedName = sqlName.toLowerCase();
-
-        if (normalizedName.contains("customer")) {
-            return "Customer ID";
-        }
-        if (normalizedName.contains("order")) {
-            return "Order Status";
-        }
-        if (normalizedName.contains("history") || normalizedName.contains("user")) {
-            return "Username";
-        }
-        return null;
-    }
-
-    private static String fieldValue(String sqlName) {
-        String normalizedName = sqlName.toLowerCase();
-
-        if (normalizedName.contains("customer")) {
-            return "101";
-        }
-        if (normalizedName.contains("order")) {
-            return "ALL";
-        }
-        if (normalizedName.contains("history") || normalizedName.contains("user")) {
-            return "qa_user";
-        }
-        return null;
     }
 
     public record DashboardView(
@@ -153,11 +132,16 @@ public class DashboardService {
             String sqlName,
             String sqlDescription,
             String tone,
-            String fieldLabel,
-            String fieldValue
+            List<String> parameterNames
     ) {
         public String commandId() {
             return "sql-" + sqlId;
+        }
+
+        public String parameterNamesJson() {
+            return parameterNames.stream()
+                    .map(name -> "\"" + name + "\"")
+                    .collect(Collectors.joining(",", "[", "]"));
         }
     }
 }

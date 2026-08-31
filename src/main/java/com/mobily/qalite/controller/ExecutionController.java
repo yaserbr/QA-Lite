@@ -1,5 +1,7 @@
 package com.mobily.qalite.controller;
 
+import java.util.Map;
+
 import com.mobily.qalite.execution.ExecutionService;
 import com.mobily.qalite.execution.ExecutionService.ExecutionResult;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,7 +30,8 @@ public class ExecutionController {
                     isAdmin(authentication),
                     request.environmentId(),
                     request.sqlId(),
-                    servletRequest.getRemoteAddr()
+                    servletRequest.getRemoteAddr(),
+                    request.parameters()
             );
             return ResponseEntity.ok(result);
         } catch (AccessDeniedException exception) {
@@ -43,7 +46,7 @@ public class ExecutionController {
                 .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
     }
 
-    record ExecuteRequest(long environmentId, long sqlId) {
+    record ExecuteRequest(long environmentId, long sqlId, Map<String, String> parameters) {
     }
 
     record ErrorResponse(String message) {

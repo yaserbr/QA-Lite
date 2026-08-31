@@ -1,12 +1,14 @@
 package com.mobily.qalite.execution;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.mobily.qalite.targetdb.TargetDatabaseConnectionService;
 import com.mobily.qalite.targetdb.TargetDatabaseConnectionService.TargetDatabaseConnection;
@@ -34,7 +36,14 @@ public class ExecutionService {
         this.targetDatabaseConnectionService = targetDatabaseConnectionService;
     }
 
-    public ExecutionResult execute(String username, boolean admin, long environmentId, long sqlId, String clientIp) {
+    public ExecutionResult execute(
+            String username,
+            boolean admin,
+            long environmentId,
+            long sqlId,
+            String clientIp,
+            Map<String, String> parameters
+    ) {
         if (!admin && !isEnvironmentAllowed(username, environmentId)) {
             throw new AccessDeniedException("This environment is not allowed for your account");
         }
@@ -44,12 +53,13 @@ public class ExecutionService {
 
         long userId = requireUserId(username);
         String sqlText = loadSqlText(sqlId);
+        Map<String, String> parameterValues = parameters == null ? Map.of() : parameters;
         TargetDatabaseConnection connection = targetDatabaseConnectionService.getEnvironmentConnection(environmentId);
 
         try (HikariDataSource dataSource = targetDatabaseConnectionService.createDataSource(connection)) {
             JdbcTemplate targetJdbcTemplate = new JdbcTemplate(dataSource);
             StatementOutcome outcome = targetJdbcTemplate.execute((ConnectionCallback<StatementOutcome>)
-                    targetConnection -> runStatement(targetConnection, sqlText));
+                    targetConnection -> runStatement(targetConnection, sqlText, parameterValues));
 
             recordHistory(userId, environmentId, sqlId, "SUCCESS", outcome.recordsReturned(), outcome.rowsAffected(), null, clientIp);
             return new ExecutionResult(
@@ -87,56 +97,113 @@ public class ExecutionService {
      * expose the first one's outcome. Running them one at a time works the same way for every supported
      * database. The final outcome reflects the last statement if it was a query (its columns/rows), otherwise
      * the total rows affected across every non-query statement in the script.
+     *
+     * <p>A statement that references named parameters (":name", see {@link SqlParameterParser}) is run as a
+     * PreparedStatement instead, with every value bound through a placeholder - never concatenated into the
+     * SQL text - so a QA_USER's input can't inject SQL. A statement with no ":name" references keeps running
+     * through the plain Statement path exactly as before, unaffected by this.
      */
-    private StatementOutcome runStatement(Connection connection, String sqlText) throws SQLException {
+    private StatementOutcome runStatement(Connection connection, String sqlText, Map<String, String> parameters) throws SQLException {
         List<String> statements = SqlScriptSplitter.split(sqlText);
+
+        List<String> columns = List.of();
+        List<List<String>> rows = List.of();
+        Integer recordsReturned = null;
+        int rowsAffected = 0;
+        boolean lastStatementWasQuery = false;
 
         try (Statement statement = connection.createStatement()) {
             statement.setMaxRows(MAX_ROWS);
             statement.setQueryTimeout(QUERY_TIMEOUT_SECONDS);
 
-            List<String> columns = List.of();
-            List<List<String>> rows = List.of();
-            Integer recordsReturned = null;
-            int rowsAffected = 0;
-            boolean lastStatementWasQuery = false;
-
             for (String singleStatement : statements) {
-                boolean hasResultSet = statement.execute(singleStatement);
+                boolean hasParameters = !SqlParameterParser.extractParameterNames(singleStatement).isEmpty();
 
-                if (hasResultSet) {
-                    try (ResultSet resultSet = statement.getResultSet()) {
-                        List<String> resultColumns = new ArrayList<>();
-                        ResultSetMetaData metaData = resultSet.getMetaData();
-                        for (int i = 1; i <= metaData.getColumnCount(); i++) {
-                            resultColumns.add(metaData.getColumnLabel(i));
-                        }
-
-                        List<List<String>> resultRows = new ArrayList<>();
-                        while (resultSet.next()) {
-                            List<String> row = new ArrayList<>(resultColumns.size());
-                            for (int i = 1; i <= resultColumns.size(); i++) {
-                                Object value = resultSet.getObject(i);
-                                row.add(value == null ? null : value.toString());
-                            }
-                            resultRows.add(row);
-                        }
-
-                        columns = resultColumns;
-                        rows = resultRows;
-                        recordsReturned = resultRows.size();
-                        lastStatementWasQuery = true;
-                    }
+                ResultSetData resultSetData;
+                Integer updateCount;
+                if (hasParameters) {
+                    Outcome outcome = runParameterizedStatement(connection, singleStatement, parameters);
+                    resultSetData = outcome.resultSetData();
+                    updateCount = outcome.updateCount();
                 } else {
-                    rowsAffected += Math.max(statement.getUpdateCount(), 0);
+                    Outcome outcome = runPlainStatement(statement, singleStatement);
+                    resultSetData = outcome.resultSetData();
+                    updateCount = outcome.updateCount();
+                }
+
+                if (resultSetData != null) {
+                    columns = resultSetData.columns();
+                    rows = resultSetData.rows();
+                    recordsReturned = resultSetData.rows().size();
+                    lastStatementWasQuery = true;
+                } else {
+                    rowsAffected += Math.max(updateCount, 0);
                     lastStatementWasQuery = false;
                 }
             }
-
-            return lastStatementWasQuery
-                    ? new StatementOutcome(columns, rows, recordsReturned, null)
-                    : new StatementOutcome(List.of(), List.of(), null, rowsAffected);
         }
+
+        return lastStatementWasQuery
+                ? new StatementOutcome(columns, rows, recordsReturned, null)
+                : new StatementOutcome(List.of(), List.of(), null, rowsAffected);
+    }
+
+    private Outcome runPlainStatement(Statement statement, String singleStatement) throws SQLException {
+        boolean hasResultSet = statement.execute(singleStatement);
+        if (!hasResultSet) {
+            return new Outcome(null, statement.getUpdateCount());
+        }
+        try (ResultSet resultSet = statement.getResultSet()) {
+            return new Outcome(readResultSet(resultSet), null);
+        }
+    }
+
+    private Outcome runParameterizedStatement(Connection connection, String singleStatement, Map<String, String> parameters)
+            throws SQLException {
+        SqlParameterParser.PreparedSql prepared = SqlParameterParser.prepare(singleStatement, parameters);
+
+        try (PreparedStatement preparedStatement = connection.prepareStatement(prepared.sql())) {
+            preparedStatement.setMaxRows(MAX_ROWS);
+            preparedStatement.setQueryTimeout(QUERY_TIMEOUT_SECONDS);
+            List<String> values = prepared.values();
+            for (int i = 0; i < values.size(); i++) {
+                preparedStatement.setString(i + 1, values.get(i));
+            }
+
+            boolean hasResultSet = preparedStatement.execute();
+            if (!hasResultSet) {
+                return new Outcome(null, preparedStatement.getUpdateCount());
+            }
+            try (ResultSet resultSet = preparedStatement.getResultSet()) {
+                return new Outcome(readResultSet(resultSet), null);
+            }
+        }
+    }
+
+    private static ResultSetData readResultSet(ResultSet resultSet) throws SQLException {
+        List<String> columns = new ArrayList<>();
+        ResultSetMetaData metaData = resultSet.getMetaData();
+        for (int i = 1; i <= metaData.getColumnCount(); i++) {
+            columns.add(metaData.getColumnLabel(i));
+        }
+
+        List<List<String>> rows = new ArrayList<>();
+        while (resultSet.next()) {
+            List<String> row = new ArrayList<>(columns.size());
+            for (int i = 1; i <= columns.size(); i++) {
+                Object value = resultSet.getObject(i);
+                row.add(value == null ? null : value.toString());
+            }
+            rows.add(row);
+        }
+
+        return new ResultSetData(columns, rows);
+    }
+
+    private record Outcome(ResultSetData resultSetData, Integer updateCount) {
+    }
+
+    private record ResultSetData(List<String> columns, List<List<String>> rows) {
     }
 
     /**
