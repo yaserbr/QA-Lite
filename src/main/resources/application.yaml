@@ -20,6 +20,13 @@ spring:
     locations: classpath:db/migration
 
 server:
+  port: ${SERVER_PORT:8080}
+  ssl:
+    enabled: ${QALITE_SSL_ENABLED:false}
+    key-store: ${QALITE_SSL_KEYSTORE:}
+    key-store-password: ${QALITE_SSL_KEYSTORE_PASSWORD:}
+    key-store-type: ${QALITE_SSL_KEYSTORE_TYPE:PKCS12}
+    key-alias: ${QALITE_SSL_KEY_ALIAS:qalite}
   servlet:
     context-path: /QaLite
     session:

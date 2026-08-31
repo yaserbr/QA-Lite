@@ -1110,6 +1110,26 @@ body {
     cursor: pointer;
 }
 
+.access-user-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+.access-user-actions .admin-submit.compact {
+    margin-top: 0;
+}
+
+.access-user-actions .admin-delete-button {
+    color: #a5342a;
+    background: rgba(224, 108, 98, 0.14);
+}
+
+.access-user-actions .admin-delete-button:hover {
+    background: rgba(224, 108, 98, 0.24);
+}
+
 .access-toggle-icon {
     flex: 0 0 auto;
     width: 14px;
@@ -1506,7 +1526,8 @@ body {
     }
 
     .dashboard-actions,
-    .access-user-header {
+    .access-user-header,
+    .access-user-actions {
         align-items: stretch;
         flex-direction: column;
     }
@@ -1522,6 +1543,14 @@ body {
     }
 
     .admin-submit.compact {
+        width: 100%;
+    }
+
+    .access-user-actions .admin-inline-form {
+        width: 100%;
+    }
+
+    .access-user-actions .admin-delete-button {
         width: 100%;
     }
 }

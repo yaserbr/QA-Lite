@@ -75,7 +75,7 @@ class SecurityAccessTests {
         when(dashboardService.getDashboardView(anyString(), anyBoolean()))
                 .thenReturn(new DashboardService.DashboardView(List.of(), List.of(), null, null));
         when(adminService.getAdminView())
-                .thenReturn(new AdminService.AdminView(List.of(), List.of(), List.of(), List.of(), TargetDatabaseType.supportedTypes()));
+                .thenReturn(new AdminService.AdminView(List.of(), List.of(), List.of(), TargetDatabaseType.supportedTypes()));
     }
 
     @Test

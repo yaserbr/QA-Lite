@@ -38,9 +38,8 @@ public class AdminService {
         List<AdminEnvironment> environments = loadEnvironments();
         List<AdminSqlDefinition> sqlDefinitions = loadSqlDefinitions();
         List<AdminUser> users = loadUsers();
-        List<AdminUserSummary> allUsers = loadAllUsers();
 
-        return new AdminView(users, allUsers, environments, sqlDefinitions, TargetDatabaseType.supportedTypes());
+        return new AdminView(users, environments, sqlDefinitions, TargetDatabaseType.supportedTypes());
     }
 
     @Transactional
@@ -178,18 +177,6 @@ public class AdminService {
         });
     }
 
-    private List<AdminUserSummary> loadAllUsers() {
-        return jdbcTemplate.query("""
-                select user_id, username, role
-                from users
-                order by role, username
-                """, (resultSet, rowNumber) -> new AdminUserSummary(
-                resultSet.getLong("user_id"),
-                resultSet.getString("username"),
-                resultSet.getString("role")
-        ));
-    }
-
     private List<AdminEnvironment> loadEnvironments() {
         return jdbcTemplate.query("""
                 select env_id, name, description, db_type, jdbc_url, db_username
@@ -310,7 +297,6 @@ public class AdminService {
 
     public record AdminView(
             List<AdminUser> users,
-            List<AdminUserSummary> allUsers,
             List<AdminEnvironment> environments,
             List<AdminSqlDefinition> sqlDefinitions,
             List<TargetDatabaseType> databaseTypes
@@ -323,13 +309,6 @@ public class AdminService {
             String role,
             Set<Long> environmentIds,
             Set<Long> sqlIds
-    ) {
-    }
-
-    public record AdminUserSummary(
-            long userId,
-            String username,
-            String role
     ) {
     }
 

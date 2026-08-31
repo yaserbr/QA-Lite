@@ -30,15 +30,13 @@ public class AdminController {
     }
 
     @GetMapping
-    String admin(Model model, Authentication authentication) {
+    String admin(Model model) {
         AdminService.AdminView view = adminService.getAdminView();
 
         model.addAttribute("users", view.users());
-        model.addAttribute("allUsers", view.allUsers());
         model.addAttribute("environments", view.environments());
         model.addAttribute("sqlDefinitions", view.sqlDefinitions());
         model.addAttribute("databaseTypes", view.databaseTypes());
-        model.addAttribute("currentUsername", authentication.getName());
 
         return "admin";
     }

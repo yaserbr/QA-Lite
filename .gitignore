@@ -3,6 +3,8 @@ target/
 .env
 .env.*
 !.env.example
+*.p12
+*.jks
 .mvn/wrapper/maven-wrapper.jar
 *.log
 /data/
